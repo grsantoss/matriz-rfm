@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurações - RFM Insights</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+    <link href="sidebar.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="l-navbar" id="navbar-vertical">
+        <div class="nav">
+            <div>
+                <!-- Logo -->
+                <a href="analise.html" class="nav-logo">
+                    <i class="fas fa-chart-pie nav-logo-icon"></i>
+                    <span class="nav-logo-name">RFM Insights</span>
+                </a>
+
+                <!-- Menu Items -->
+                <div class="nav-list">
+                    <a href="analise.html" class="nav-link">
+                        <i class="fas fa-chart-line nav-icon"></i>
+                        <span class="nav-name">Análise</span>
+                    </a>
+                    <a href="marketplace.html" class="nav-link">
+                        <i class="fas fa-store nav-icon"></i>
+                        <span class="nav-name">Criar Campanha</span>
+                    </a>
+                    <a href="integracao.html" class="nav-link">
+                        <i class="fas fa-plug nav-icon"></i>
+                        <span class="nav-name">Integração</span>
+                    </a>
+                    <a href="configuracoes.html" class="nav-link active">
+                        <i class="fas fa-cog nav-icon"></i>
+                        <span class="nav-name">Configurações</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Logout Button -->
+            <a href="login.html" class="nav-link nav-logout">
+                <i class="fas fa-sign-out-alt nav-icon"></i>
+                <span class="nav-name">Sair</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Header Toggle Button -->
+    <header class="header" id="header">
+        <div class="header-toggle">
+            <button id="header-toggle" class="btn btn-link text-white">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </header>
+    
+    <div class="container-fluid" style="padding-top: 50px; padding-bottom: 50px;">
+        <div class="row">
+
+            <!-- Main Content -->
+            <div class="col py-3 main-content">
+                <h2 class="mb-4">Configurações</h2>
+
+                <div class="row">
+                    <!-- Seção de Informações Pessoais (Lado Esquerdo) -->
+                    <div class="col-lg-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span>Informações Pessoais</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <!-- Foto de perfil -->
+                                    <div class="col-md-3 text-center">
+                                        <div class="avatar-upload text-center">
+                                            <div class="profile-pic-wrapper mb-3">
+                                                <div class="profile-pic rounded-circle bg-primary d-flex align-items-center justify-content-center" style="width: 100px; height: 100px; margin: 0 auto;">
+                                                    <span class="text-white fs-1">GS</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="d-grid gap-2">
+                                            <button class="btn btn-primary btn-sm"><i class="fas fa-upload me-2"></i>Alterar foto</button>
+                                            <button class="btn btn-outline-danger btn-sm"><i class="fas fa-trash-alt me-2"></i>Remover foto</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Formulário de dados pessoais -->
+                                    <div class="col-md-9">
+                                        <form id="profileForm">
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="firstName" class="form-label">Nome</label>
+                                                    <input
+                                                        type="text"
+                                                        class="form-control"
+                                                        id="firstName"
+                                                        placeholder=""
+                                                    />
+                                                </div>
+
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="phone" class="form-label">Telefone</label>
+                                                    <input
+                                                        type="tel"
+                                                        class="form-control"
+                                                        id="phone"
+                                                        placeholder=""
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label for="emailLogin" class="form-label">Email</label>
+                                                <input
+                                                    type="email"
+                                                    class="form-control"
+                                                    id="emailLogin"
+                                                    placeholder=""
+                                                />
+                                                <small class="form-text text-muted">
+                                                    Este email será usado para login e recebimento de notificações.
+                                                </small>
+                                            </div>
+
+                                            <div class="d-flex justify-content-end mt-4">
+                                                <button type="button" class="btn btn-outline-secondary me-2">Cancelar</button>
+                                                <button type="submit" class="btn btn-primary">Salvar alterações</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Seção de Segurança (Lado Direito) -->
+                    <div class="col-lg-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span>Segurança</span>
+                            </div>
+                            <div class="card-body">
+                                <h6>Alterar Senha</h6>
+                                <hr />
+
+                                <form id="passwordForm">
+                                    <div class="mb-3">
+                                        <label for="currentPassword" class="form-label">Senha atual</label>
+                                        <input type="password" class="form-control password-input" id="currentPassword" placeholder="Digite sua senha atual" />
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="newPassword" class="form-label">Nova senha</label>
+                                        <input type="password" class="form-control password-input" id="newPassword" placeholder="Digite sua nova senha" />
+                                        <small class="form-text text-muted">
+                                            A senha deve ter pelo menos 8 caracteres, incluindo letras maiúsculas, minúsculas e números.
+                                        </small>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="confirmPassword" class="form-label">Confirmar nova senha</label>
+                                        <input type="password" class="form-control password-input" id="confirmPassword" placeholder="Confirme sua nova senha" />
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <button type="button" id="togglePassword" class="btn btn-sm btn-outline-secondary">
+                                            <i class="fas fa-eye me-1"></i> Mostrar Senha
+                                        </button>
+                                    </div>
+
+                                    <div class="d-flex justify-content-end">
+                                        <button type="button" class="btn btn-outline-secondary me-2">Cancelar</button>
+                                        <button type="submit" class="btn btn-primary">Atualizar senha</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="user-profile.js"></script>
+    <script src="sidebar.js"></script>
+    <script src="settings.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const mainContent = document.querySelector('.main-content');
+
+            sidebarToggle.addEventListener('click', function() {
+                sidebar.classList.toggle('collapsed');
+                mainContent.classList.toggle('expanded');
+            });
+        });
+    </script>
+</body>
+</html>

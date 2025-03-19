@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análise - RFM Insights</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+    <link href="sidebar.css" rel="stylesheet">
+    <link href="header.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="rfm_charts.js"></script>
+    <script src="analise.js" defer></script>
+    <script src="ai_insights.js" defer></script>
+    <!-- Removed upload.js reference as it was causing duplicate file dialogs -->
+</head>
+<body id="body-pd">
+    <!-- Navbar -->
+    <nav class="l-navbar" id="navbar-vertical">
+        <div class="nav">
+            <div>
+                <!-- Logo -->
+                <a href="analise.html" class="nav-logo">
+                    <i class="fas fa-chart-pie nav-logo-icon"></i>
+                    <span class="nav-logo-name">RFM Insights</span>
+                </a>
+
+                <!-- Menu Items -->
+                <div class="nav-list">
+                    <a href="analise.html" class="nav-link active">
+                        <i class="fas fa-chart-line nav-icon"></i>
+                        <span class="nav-name">Análise</span>
+                    </a>
+                    <a href="marketplace.html" class="nav-link">
+                        <i class="fas fa-store nav-icon"></i>
+                        <span class="nav-name">Criar Campanha</span>
+                    </a>
+                    <a href="integracao.html" class="nav-link">
+                        <i class="fas fa-plug nav-icon"></i>
+                        <span class="nav-name">Integração</span>
+                    </a>
+                    <a href="configuracoes.html" class="nav-link">
+                        <i class="fas fa-cog nav-icon"></i>
+                        <span class="nav-name">Configurações</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Logout Button -->
+            <a href="login.html" class="nav-link nav-logout">
+                <i class="fas fa-sign-out-alt nav-icon"></i>
+                <span class="nav-name">Sair</span>
+            </a>
+        </div>
+    </nav>
+    
+    <!-- Header Toggle Button -->
+    <header class="header" id="header">
+        <a href="analise.html" class="header-brand">
+            <i class="fas fa-chart-pie"></i>
+            <span>RFM Insights</span>
+        </a>
+        <div class="header-toggle">
+            <button id="header-toggle" class="btn btn-link text-white" aria-label="Toggle Menu">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </header>
+    
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Main Content -->
+            <div class="col py-3 main-content">
+                <h2 class="mb-4">Análise RFM</h2>
+                
+                <!-- Data Input Section -->
+                <div class="card mb-4">
+                    <div class="card-header">Importar Dados</div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Step 1 - Segment Selection -->
+                            <div class="col-md-6 mb-4">
+                                <div class="step-block">
+                                    <h5 class="step-title">Etapa 1</h5>
+                                    <h6 class="mb-3">Escolha o segmento de mercado que melhor se adapta aos seus dados para uma análise RFM precisa.</h6>
+                                    <select class="form-select" id="segment-select">
+                                        <option value="" selected disabled>Escolha seu segmento.</option>
+                                        <option value="ecommerce">E-commerce</option>
+                                        <option value="assinatura_de_varejo">Serviços de assinatura de varejo (vinho, café, beleza, livro, etc.)</option>
+                                        <option value="seguros_plano_de_saude">Seguros e Planos de Saúde</option>
+                                        <option value="educacao_cursos_online">Educação e Cursos Online</option>
+                                        <option value="telecomunicacao_provedores_de_internet">Telecomunicações e Provedores de Internet</option>
+                                        <option value="agencia_de_turismo-hotelaria">Hospitalidade e viagens (hotéis, agências de viagens, etc.)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- Step 2 - CSV Upload -->
+                            <div class="col-md-6 mb-4">
+                                <div class="step-block">
+                                    <h5 class="step-title">Passo 2</h5>
+                                    <h6 class="mb-3">Carregue seu arquivo CSV</h6>
+                                    <div class="upload-area mb-3" id="drop-zone">
+                                        <input type="file" class="form-control d-none" id="csv-upload" accept=".csv">
+                                        <div class="text-center py-4">
+                                            <i class="fas fa-file-csv fa-3x text-accent mb-3"></i>
+                                            <p>Arraste e solte seu arquivo CSV ou clique para selecionar um arquivo.</p>
+                                            <div class="selected-file mt-2" id="selected-file"></div>
+                                        </div>
+                                        <small class="text-muted d-block text-center">Apenas arquivos CSV são suportados</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Data Visualization Section -->
+                        <div class="row mt-4 mb-4">
+                            <div class="col-12">
+                                <div class="step-block">
+                                    <h5 class="step-title">Passo 3</h5>
+                                    <h6 class="mb-3">Visualização dos dados</h6>
+                                    <p class="text-muted mb-3">Os dados do arquivo CSV serão exibidos aqui.</p>
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-hover">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>customer_id</th>
+                                                    <th>total_spent</th>
+                                                    <th>frequency</th>
+                                                    <th>last_purchase_date</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <!-- Os dados serão carregados dinamicamente -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="text-muted small text-end">Total de registros: 0 | Colunas detectadas: 4</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Column Mapping Section -->
+                        <div class="row mt-4 mb-4">
+                            <div class="col-12">
+                                <div class="step-block">
+                                    <h5 class="step-title">Passo 4</h5>
+                                    <h6 class="mb-3">Mapeamento de colunas</h6>
+                                    <p class="text-muted mb-3">Relacione as colunas do seu arquivo CSV com os campos necessários para análise RFM.</p>
+                                    
+                                    <div class="row mb-3">
+                                        <div class="col-md-3 mb-3 mb-md-0">
+                                            <label for="user_id" class="form-label">ID do usuário <span class="text-danger">*</span></label>
+                                            <div class="input-group">
+                                                <select class="form-select" id="user_id" required>
+                                                    <option value="" selected>Selecione uma coluna</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 mb-3 mb-md-0">
+                                            <label for="activity_date" class="form-label">Recência <span class="text-danger">*</span></label>
+                                            <div class="input-group">
+                                                <select class="form-select" id="activity_date" required>
+                                                    <option value="" selected>Selecione uma coluna</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 mb-3 mb-md-0">
+                                            <label for="frequency" class="form-label">Frequência <span class="text-danger">*</span></label>
+                                            <div class="input-group">
+                                                <select class="form-select" id="frequency" required>
+                                                    <option value="" selected>Selecione uma coluna</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label for="consumption_time" class="form-label">Monetário/Valor <span class="text-danger">*</span></label>
+                                            <div class="input-group">
+                                                <select class="form-select" id="consumption_time" required>
+                                                    <option value="" selected>Selecione uma coluna</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="text-muted small">Por favor, mapeie todos os campos obrigatórios para continuar.</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-end gap-3">
+                            <button class="btn btn-primary" type="button" id="analyze-btn">Analisar Dados</button>
+                        </div>
+                
+                        <div id="upload-status" class="alert alert-info mt-3 d-none">
+                            <i class="fas fa-spinner fa-spin me-2"></i> Analisando dados...
+                        </div>
+                    </div>
+                </div>
+                        
+                <!-- Results Section -->
+                <div class="card mb-4">
+                    <div class="card-header">Resultados da Análise</div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- RFM Matrix -->
+                            <div class="col-md-6 mb-4">
+                                <div class="card h-100">
+                                    <div class="card-header">Matriz RFM</div>
+                                    <div class="card-body">
+                                        <div class="chart-placeholder" style="height: 400px;">
+                                            <div class="d-flex justify-content-center align-items-center h-100">
+                                                <div class="text-center">
+                                                    <i class="fas fa-chart-pie fa-3x text-muted mb-3"></i>
+                                                    <p>Carregue seus dados para visualizar a matriz RFM</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Segment Distribution -->
+                            <div class="col-md-6 mb-4">
+                                <div class="card h-100">
+                                    <div class="card-header">Distribuição de Segmentos</div>
+                                    <div class="card-body">
+                                        <div class="chart-placeholder" style="height: 400px;">
+                                            <div class="d-flex justify-content-center align-items-center h-100">
+                                                <div class="text-center">
+                                                    <i class="fas fa-chart-pie fa-3x text-muted mb-3"></i>
+                                                    <p>Carregue seus dados para visualizar a distribuição de segmentos</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Predictive Matrix -->
+                            <div class="col-md-12 mb-4">
+                                <div class="card">
+                                    <div class="card-header">Matriz de Análises Preditivas</div>
+                                    <div class="card-body">
+                                        <div class="chart-placeholder" style="height: 400px;">
+                                            <div class="d-flex justify-content-center align-items-center h-100">
+                                                <div class="text-center">
+                                                    <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                                                    <p>Carregue seus dados para visualizar análises preditivas</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- AI Suggestions -->
+                            <div class="col-md-12 mb-4">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <div class="d-flex align-items-center">
+                                            <span>Sugestões de IA</span>
+                                            <button class="btn btn-sm btn-outline-primary ms-auto" id="generate-insights-btn">
+                                                <i class="fas fa-robot me-1"></i> Gerar Insights
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="ai-suggestions-content">
+                                            <div class="ai-placeholder d-flex justify-content-center align-items-center" style="height: 300px;">
+                                                <div class="text-center">
+                                                    <i class="fas fa-robot fa-3x text-muted mb-3"></i>
+                                                    <p>Clique em "Gerar Insights" para receber sugestões estratégicas personalizadas baseadas na sua análise RFM</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div id="ai-loading" class="d-none">
+                                            <div class="d-flex justify-content-center align-items-center" style="height: 300px;">
+                                                <div class="text-center">
+                                                    <div class="spinner-border text-primary mb-3" role="status">
+                                                        <span class="visually-hidden">Carregando...</span>
+                                                    </div>
+                                                    <p>Gerando insights estratégicos com IA...</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Analysis History -->
+                <div class="card mb-4">
+                    <div class="card-header">Histórico de Análises</div>
+                    <div class="card-body">
+                        <div

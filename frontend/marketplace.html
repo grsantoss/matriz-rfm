@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criar Campanha - RFM Insights</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+    <link href="sidebar.css" rel="stylesheet">
+    <link href="header.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body id="body-pd">
+    <!-- Navbar -->
+    <nav class="l-navbar" id="navbar-vertical">
+        <div class="nav">
+            <div>
+                <!-- Logo -->
+                <a href="analise.html" class="nav-logo">
+                    <i class="fas fa-chart-pie nav-logo-icon"></i>
+                    <span class="nav-logo-name">RFM Insights</span>
+                </a>
+
+                <!-- Menu Items -->
+                <div class="nav-list">
+                    <a href="analise.html" class="nav-link">
+                        <i class="fas fa-chart-line nav-icon"></i>
+                        <span class="nav-name">Análise</span>
+                    </a>
+                    <a href="marketplace.html" class="nav-link active">
+                        <i class="fas fa-store nav-icon"></i>
+                        <span class="nav-name">Criar Campanha</span>
+                    </a>
+                    <a href="integracao.html" class="nav-link">
+                        <i class="fas fa-plug nav-icon"></i>
+                        <span class="nav-name">Integração</span>
+                    </a>
+                    <a href="configuracoes.html" class="nav-link">
+                        <i class="fas fa-cog nav-icon"></i>
+                        <span class="nav-name">Configurações</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Logout Button -->
+            <a href="login.html" class="nav-link nav-logout">
+                <i class="fas fa-sign-out-alt nav-icon"></i>
+                <span class="nav-name">Sair</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Header Toggle Button -->
+    <header class="header" id="header">
+        <a href="analise.html" class="header-brand">
+            <i class="fas fa-chart-pie"></i>
+            <span>RFM Insights</span>
+        </a>
+        <div class="header-toggle">
+            <button id="header-toggle" class="btn btn-link text-white" aria-label="Toggle Menu">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </header>
+    
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col py-3 main-content">
+                <h2 class="mb-4">Criar Campanha</h2>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card mb-4">
+                            <div class="card-header">Criar Nova Campanha</div>
+                            <div class="card-body">
+                                <form id="campaignForm" class="marketplace-form">
+                                    <div class="mb-3">
+                                        <label class="form-label">Tipo de Mensagem</label>
+                                        <select class="form-select" id="messageType" name="messageType">
+                                            <option value="sms">SMS</option>
+                                            <option value="whatsapp">WhatsApp</option>
+                                            <option value="email">E-mail</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Nome da Empresa</label>
+                                        <input type="text" class="form-control" id="companyName" name="companyName" placeholder="Nome da sua empresa" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Website da Empresa (opcional)</label>
+                                        <input type="url" class="form-control" id="companyWebsite" name="companyWebsite" placeholder="https://www.seusite.com.br">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Sobre a Empresa</label>
+                                        <textarea class="form-control" id="companyDescription" name="companyDescription" rows="3" placeholder="Conte um pouco sobre o que sua empresa faz..." required></textarea>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Segmento RFM</label>
+                                        <select class="form-select" id="rfmSegment" name="rfmSegment">
+                                            <option value="campioes">Campeões</option>
+                                            <option value="clientes_fieis">Clientes Fiéis</option>
+                                            <option value="fieis_em_potencial">Fiéis em Potencial</option>
+                                            <option value="novos_clientes">Novos Clientes</option>
+                                            <option value="clientes_promissores">Clientes Promissores</option>
+                                            <option value="clientes_que_precisam_de_atencao">Clientes que Precisam de Atenção</option>
+                                            <option value="clientes_quase_dormentes">Clientes Quase Dormentes</option>
+                                            <option value="clientes_que_nao_posso_perder">Clientes que Não Posso Perder</option>
+                                            <option value="clientes_em_risco">Clientes em Risco</option>
+                                            <option value="clientes_hibernando">Clientes Hibernando</option>
+                                            <option value="clientes_perdidos">Clientes Perdidos</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Objetivo da Campanha</label>
+                                        <select class="form-select" id="objective" name="objective">
+                                            <option value="retention_de_clientes">Retenção de Clientes</option>
+                                            <option value="reativacao_de_clientes_inativos">Reativação de Clientes Inativos</option>
+                                            <option value="upsell">Upsell</option>
+                                            <option value="cross-sell">Cross-sell</option>
+                                            <option value="fidelizacao_de_clientes">Fidelizalção de Clientes</option>
+                                            <option value="aumento_de_ticket_medio">Aumento de Ticket Médio</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Sazonalidade</label>
+                                        <select class="form-select" id="seasonality" name="seasonality">
+                                            <option value="none">Sem sazonalidade</option>
+                                            <option value="consumer_day">Dia do Consumidor</option>
+                                            <option value="easter">Páscoa</option>
+                                            <option value="mothers_day">Dia das Mães</option>
+                                            <option value="valentines_day">Dia dos Namorados</option>
+                                            <option value="fathers_day">Dia dos Pais</option>
+                                            <option value="customer_day">Dia do Cliente</option>
+                                            <option value="children_day">Dia das Crianças</option>
+                                            <option value="black_friday">Black Friday</option>
+                                            <option value="cyber_monday">Cyber Monday</option>
+                                            <option value="christmas">Natal</option>
+                                            <option value="back_to_school">Volta às Aulas</option>
+                                            <option value="store_anniversary">Aniversário da Loja</option>
+                                            <option value="june_party">Festa Junina/Julina</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Tom da Comunicação</label>
+                                        <select class="form-select" id="tone" name="tone">
+                                            <option value="formal">Formal</option>
+                                            <option value="amigavel">Amigável</option>
+                                            <option value="exclusivo">Exclusivo</option>
+                                            <option value="empolgante">Empolgante</option>
+                                            <option value="informativo">Informativo</option>
+                                            <option value="urgente">Urgente</option>
+                                            <option value="divertido">Divertido</option>
+                                            <option value="inspirador">Inspirador</option>
+                                            <option value="tecnico">Técnico</option>
+                                            <option value="persuasivo">Persuasivo</option>
+                                        </select>
+                                    </div>
+                                    <button type="button" id="generateButton" class="btn btn-primary">Gerar Texto com IA</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card mb-4">
+                            <div class="card-header">Texto Gerado</div>
+                            <div class="card-body">
+                                <div id="generatedText" class="generated-text">
+                                    <p>Aguardando geração do texto...</p>
+                                </div>
+                                <div class="text-center mt-3">
+                                    <div class="d-flex justify-content-center align-items-center mb-2">
+                                        <button id="prevMessageButton" class="btn btn-sm btn-outline-primary me-2" disabled>
+                                            <i class="fas fa-chevron-left"></i>
+                                        </button>
+                                        <span id="messageCounter" class="mx-2">0 de 0</span>
+                                        <button id="nextMessageButton" class="btn btn-sm btn-outline-primary ms-2" disabled>
+                                            <i class="fas fa-chevron-right"></i>
+                                        </button>
+                                    </div>
+                                    <button id="regenerateButton" class="btn btn-outline-accent me-2" disabled>Regenerar (0/3)</button>
+                                    <button id="downloadButton" class="btn btn-accent" disabled><i class="fas fa-download"></i> Download</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header">Histórico de Campanhas (Últimos 7 dias)</div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table id="historyTable" class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Tipo</th>
+                                        <th>Segmento</th>
+                                        <th>Objetivo</th>
+                                        <th>Sazonalidade</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="historyTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message Preview Modal -->
+    <div class="modal fade" id="messagePreviewModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Visualizar Mensagem</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="previewText"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="sidebar.js"></script>
+    <script src="marketplace.js"></script>
+</body>
+</html>

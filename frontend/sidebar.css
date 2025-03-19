@@ -1,0 +1,212 @@
+/* RFM Insights - Sidebar Styles */
+
+:root {
+    --white: #ffffff;
+    --light-gray: #f4f4f5;
+    --dark: #202124;
+    --accent: #ff014f;
+    --sidebar-width: 250px;
+    --header-height: 60px;
+    --transition-speed: 0.3s ease-in-out;
+}
+
+/* Sidebar Container */
+.l-navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: var(--sidebar-width);
+    height: 100vh;
+    background-color: var(--dark);
+    padding: 1rem 0.5rem;
+    z-index: 100;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    overflow-x: hidden;
+    transform: translateX(0);
+    transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+}
+
+/* Sidebar Close Button */
+.sidebar-close-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: var(--white);
+    cursor: pointer;
+    transition: color var(--transition-speed);
+    display: none; /* Esconde o botão no desktop */
+}
+
+.sidebar-close-btn:hover {
+    color: var(--accent);
+}
+
+/* Navigation Container */
+.nav {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+}
+
+/* Logo and Navigation Links */
+.nav-logo,
+.nav-link {
+    display: flex;
+    align-items: center;
+    color: var(--white);
+    text-decoration: none;
+    padding: 0.8rem 0.5rem;
+    margin-bottom: 0.5rem;
+    border-radius: 0.5rem;
+    transition: background-color var(--transition-speed), color var(--transition-speed);
+}
+
+/* Logo Styling */
+.nav-logo {
+    font-weight: bold;
+    margin-bottom: 2rem;
+}
+
+.nav-logo-icon {
+    font-size: 1.25rem;
+    margin-right: 1rem;
+    color: var(--accent);
+}
+
+.nav-logo-name {
+    font-size: 1rem;
+    white-space: nowrap;
+    color: var(--white);
+    transition: color var(--transition-speed);
+}
+
+.nav-logo:hover .nav-logo-name {
+    color: var(--accent);
+}
+
+/* Navigation Links */
+.nav-link {
+    position: relative;
+    color: var(--white);
+}
+
+.nav-link:hover {
+    color: var(--white);
+    background-color: rgba(255, 1, 79, 0.1);
+}
+
+.nav-link.active {
+    color: var(--white);
+    background-color: var(--accent);
+}
+
+.nav-icon {
+    font-size: 1.25rem;
+    margin-right: 1rem;
+}
+
+.nav-name {
+    font-size: 0.875rem;
+    white-space: nowrap;
+}
+
+/* Logout Link */
+.nav-logout {
+    margin-top: auto;
+}
+
+/* Mobile Responsiveness */
+@media screen and (max-width: 768px) {
+    .l-navbar {
+        transform: translateX(-100%);
+        width: 100%;
+        height: 100vh;
+        padding: 1rem;
+        transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+    }
+    
+    .l-navbar.show {
+        transform: translateX(0);
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        transition-delay: 0.1s;
+    }
+    
+    .sidebar-close-btn {
+        display: block; /* Exibe o botão no mobile */
+    }
+    
+    .nav {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .nav-logo {
+        margin-bottom: 1.5rem;
+    }
+    
+    .nav-list {
+        width: 100%;
+    }
+    
+    .nav-link {
+        width: 100%;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .main-content {
+        margin-top: var(--header-height);
+        width: 100%;
+        padding: 15px;
+    }
+    
+    /* Header toggle button for mobile */
+    .header {
+        background-color: var(--dark);
+        height: var(--header-height);
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 99;
+        display: flex;
+        align-items: center;
+        padding: 0 15px;
+        transition: background-color var(--transition-speed);
+    }
+    
+    .header-toggle {
+        display: block;
+        cursor: pointer;
+    }
+    
+    /* Melhorando a área de clique do botão toggle */
+    .header-toggle .btn-link {
+        min-width: 44px;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* Small Mobile Adjustments */
+@media screen and (max-width: 576px) {
+    .nav-logo-name, .nav-name {
+        font-size: 0.8rem;
+    }
+    
+    .nav-icon, .nav-logo-icon {
+        font-size: 1.1rem;
+        margin-right: 0.75rem;
+    }
+    
+    .nav-link {
+        padding: 0.75rem;
+    }
+}

@@ -1,0 +1,56 @@
+# RFM Insights - Dependency Requirements
+
+# Web Framework and API
+fastapi==0.109.2  # Latest stable version as of update
+uvicorn==0.24.0  # ASGI server for FastAPI
+pydantic==2.5.1  # Data validation for FastAPI
+
+# Authentication and Security
+python-jose[cryptography]==3.3.0  # JWT token handling
+passlib[bcrypt]==1.7.4  # Password hashing
+python-multipart==0.0.6  # Form data parsing
+
+# Database
+SQLAlchemy==2.0.23  # ORM - Compatible with FastAPI 0.109.x
+mysql-connector-python==8.2.0  # MySQL database driver
+alembic==1.12.1  # Database migration tool
+psycopg2-binary==2.9.9  # PostgreSQL database driver
+
+# Environment and Configuration
+python-dotenv==1.0.0  # Environment variable management
+
+# Monitoring and Logging
+sentry-sdk==1.39.1  # Error tracking and performance monitoring
+prometheus-client==0.17.1  # Prometheus metrics collection
+psutil==5.9.6  # System resource monitoring
+requests==2.31.0  # HTTP client for alerts
+
+# External Services
+Google-Auth-oauthlib==1.1.0  # Google authentication
+openai==1.3.3  # OpenAI API integration
+
+# Testing
+pytest==7.4.3  # Testing framework
+httpx==0.25.2  # HTTP client for testing
+
+# Email
+aiosmtplib==2.0.2  # Async SMTP client
+
+# File Handling
+python-magic==0.4.27  # File type detection
+Pillow==10.1.0  # Image processing
+
+# Data Analysis and Machine Learning
+pandas==2.1.3  # Data manipulation
+numpy==1.26.2  # Numerical computing
+scikit-learn==1.3.2  # Machine learning algorithms
+xgboost==2.0.2  # Gradient boosting
+matplotlib==3.8.2  # Data visualization
+seaborn==0.13.0  # Statistical data visualization
+
+# PDF Generation
+reportlab==3.6.13  # PDF generation library
+
+# Note: These exact versions have been tested together and are known to be compatible.
+# When upgrading any package, test thoroughly as dependencies between packages
+# (especially FastAPI, Pydantic, and SQLAlchemy) can cause compatibility issues.

@@ -1,0 +1,44 @@
+/* User Profile Component Styles - Simplified */
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 15px;
+    margin: 10px;
+    z-index: 1000;
+    position: relative; /* Changed from fixed to relative for natural page flow */
+}
+
+.logout-button {
+    background-color: var(--primary-color, #4a90e2);
+    border: none;
+    color: var(--text-light, #ffffff);
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+}
+
+.logout-button i {
+    margin-right: 8px;
+}
+
+.logout-button:hover {
+    opacity: 0.9;
+}
+
+/* Media queries for responsive design */
+@media (max-width: 768px) {
+    .user-profile {
+        position: relative;
+        width: auto;
+    }
+    
+    .logout-button {
+        color: white; /* Ensure text is white on mobile */
+    }
+}

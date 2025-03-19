@@ -1,0 +1,217 @@
+/* RFM Insights - Header Styles */
+
+:root {
+    --header-height: 60px;
+    --header-bg: var(--dark);
+    --header-text: var(--white);
+    --transition-speed: 0.3s ease;
+    --footer-height-mobile: 25px;
+}
+
+/* Top Header Bar */
+.header {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: var(--sidebar-width);
+    height: var(--header-height);
+    padding: 0 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 99;
+    transition: all var(--transition-speed);
+    background: transparent;
+}
+
+.header-toggle {
+    display: none;
+    margin-right: 10px;
+}
+
+.header-brand {
+    display: none;
+    color: var(--header-text);
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 1.3rem;
+}
+
+.header-brand i {
+    margin-right: 0.5rem;
+    color: var(--accent);
+    font-size: 1.4rem;
+}
+
+.header-brand span {
+    color: var(--white);
+}
+
+.header-brand:hover {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.header-brand:hover span {
+    color: var(--accent);
+}
+
+/* User Profile Styles */
+.header-user {
+    display: flex;
+    align-items: center;
+    color: var(--dark);
+    font-size: 16px;
+    font-weight: 500;
+    margin-left: auto;
+    padding-right: 35px;
+}
+
+.header-user-avatar {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    margin-left: 10px;
+    border: 2px solid var(--accent);
+    object-fit: cover;
+}
+
+.header-user-name {
+    max-width: 150px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Mobile Header Styles */
+@media screen and (max-width: 992px) {
+    .header {
+        left: 220px; /* Match sidebar width in tablet view */
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .header {
+        left: 0;
+        background-color: var(--header-bg);
+        justify-content: space-between;
+        padding: 0 15px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .header-toggle {
+        display: block;
+        order: 2;
+        margin-right: 10px;
+    }
+
+    .header-brand {
+        display: flex;
+        align-items: center;
+        order: 1;
+        font-size: 1.2rem;
+    }
+
+    .header-user {
+        display: none !important;
+    }
+
+    .header-toggle .btn-link {
+        color: var(--header-text);
+        padding: 8px;
+        font-size: 1.4rem;
+    }
+
+    .header-toggle .btn-link:hover,
+    .header-toggle .btn-link:focus {
+        color: var(--accent);
+        text-decoration: none;
+    }
+}
+
+/* Small Mobile Adjustments */
+@media screen and (max-width: 576px) {
+    .header {
+        padding: 0 12px;
+    }
+    
+    .header-toggle .btn-link {
+        font-size: 1.3rem;
+        padding: 6px;
+    }
+    
+    .header-brand {
+        font-size: 1.1rem;
+    }
+}
+
+/* Adjust main content padding for header */
+.main-content {
+    padding-top: calc(var(--header-height) + 1rem);
+}
+
+/* Body padding adjustment when sidebar is shown */
+body.body-pd {
+    padding-left: var(--sidebar-width);
+}
+
+/* Body padding adjustment for mobile */
+@media screen and (max-width: 768px) {
+    body.body-pd {
+        padding-left: 0;
+    }
+    
+    .main-content {
+        padding-top: calc(var(--header-height) + 0.5rem);
+        padding-bottom: calc(var(--footer-height-mobile) + 1rem);
+    }
+}
+
+/* Mobile Footer */
+.mobile-footer {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: var(--footer-height-mobile);
+    background-color: var(--dark);
+    color: var(--white);
+    text-align: center;
+    font-size: 0.85rem;
+    padding: 0;
+    line-height: 25px;
+    z-index: 99;
+    transition: all var(--transition-speed);
+}
+
+.mobile-footer.body-pd {
+    left: var(--sidebar-width);
+    width: calc(100% - var(--sidebar-width));
+}
+
+/* Desktop/Tablet Footer (não fixo) */
+.desktop-footer {
+    margin-top: 2rem;
+    padding: 1.5rem 0 25px 0;
+    background-color: var(--light-gray);
+    color: var(--dark);
+    text-align: center;
+    font-size: 0.9rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+@media screen and (max-width: 768px) {
+    .mobile-footer {
+        display: block;
+    }
+    
+    .mobile-footer.body-pd {
+        left: 0;
+        width: 100%;
+    }
+    
+    .desktop-footer {
+        display: none;
+    }
+}

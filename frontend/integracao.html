@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Integração - RFM Insights</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+    <link href="sidebar.css" rel="stylesheet">
+    <link href="header.css" rel="stylesheet">
+</head>
+<body id="body-pd">
+    <!-- Navbar -->
+    <nav class="l-navbar" id="navbar-vertical">
+        <div class="nav">
+            <div>
+                <!-- Logo -->
+                <a href="analise.html" class="nav-logo">
+                    <i class="fas fa-chart-pie nav-logo-icon"></i>
+                    <span class="nav-logo-name">RFM Insights</span>
+                </a>
+
+                <!-- Menu Items -->
+                <div class="nav-list">
+                    <a href="analise.html" class="nav-link">
+                        <i class="fas fa-chart-line nav-icon"></i>
+                        <span class="nav-name">Análise</span>
+                    </a>
+                    <a href="marketplace.html" class="nav-link">
+                        <i class="fas fa-store nav-icon"></i>
+                        <span class="nav-name">Criar Campanha</span>
+                    </a>
+                    <a href="integracao.html" class="nav-link active">
+                        <i class="fas fa-plug nav-icon"></i>
+                        <span class="nav-name">Integração</span>
+                    </a>
+                    <a href="configuracoes.html" class="nav-link">
+                        <i class="fas fa-cog nav-icon"></i>
+                        <span class="nav-name">Configurações</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Logout Button -->
+            <a href="login.html" class="nav-link nav-logout">
+                <i class="fas fa-sign-out-alt nav-icon"></i>
+                <span class="nav-name">Sair</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Header Toggle Button and User Info -->
+    <header class="header" id="header">
+        <a href="analise.html" class="header-brand">
+            <i class="fas fa-chart-pie"></i>
+            <span>RFM Insights</span>
+        </a>
+        <div class="header-toggle">
+            <button id="header-toggle" class="btn btn-link text-white" aria-label="Toggle Menu">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </header>
+    
+    <div class="container-fluid">
+        <div class="row">
+
+            <!-- Main Content -->
+            <div class="col py-3 main-content">
+                <h2 class="mb-4">Integração</h2>
+                
+                <!-- Webhook Configuration (Full Width) -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>Configurar Webhooks</span>
+                        <div>
+                            <button class="btn btn-sm btn-outline-secondary me-2" id="view-json-payload">Ver Exemplo de Payload</button>
+                            <button class="btn btn-sm btn-outline-primary" id="add-webhook">+ Adicionar Webhook</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="webhooks-container">
+                            <!-- Webhook 1 - Only show one webhook by default -->
+                            <div class="webhook-item mb-4" data-id="initial-webhook">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div class="d-flex align-items-center">
+                                        <h6 class="mb-0 me-2">Webhook #1</h6>
+                                        <input type="text" class="form-control form-control-sm webhook-name" style="width: 200px;" placeholder="Nome do Webhook">
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="webhook-url-1" class="form-label">URL do Webhook</label>
+                                    <input type="url" class="form-control webhook-url" id="webhook-url-1" placeholder="https://sua-api.com/webhook">
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-success btn-sm save-webhook" data-webhook-id="initial-webhook">Salvar Webhook</button>
+                                    <button type="button" class="btn btn-primary btn-sm test-webhook" data-webhook-id="initial-webhook">Testar Webhook</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Manage Webhooks Section -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>Gerenciar Webhooks</span>
+                    </div>
+                    <div class="card-body">
+                        <div id="manage-webhooks-container">
+                            <p class="text-muted mb-3">Seus webhooks configurados aparecerão aqui para gerenciamento.</p>
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Nome</th>
+                                            <th>URL</th>
+                                            <th>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="webhooks-table-body">
+                                        <!-- Webhooks will be dynamically added here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- JSON Payload Modal -->
+                <div class="modal fade" id="jsonPayloadModal" tabindex="-1" aria-labelledby="jsonPayloadModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="jsonPayloadModalLabel">Exemplo de Payload JSON</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="webhook-json" style="max-height: 400px; overflow-y: auto; background-color: #f8f9fa; padding: 15px; border-radius: 4px; font-family: monospace; white-space: pre;">
+                                {
+                                    "event": "rfm_analysis_completed",
+                                    "timestamp": "2024-05-15T14:30:00Z",
+                                    "data": {
+                                        "analysis_id": "a1b2c3d4",
+                                        "company_name": "Empresa ABC",
+                                        "analysis_date": "2024-05-15",
+                                        "total_customers": 600,
+                                        "rfm_scores": {
+                                            "recency_avg": 45.2,
+                                            "frequency_avg": 3.8,
+                                            "monetary_avg": 527.35
+                                        },
+                                        "segments": [
+                                            {
+                                                "name": "Champions",
+                                                "code": "111",
+                                                "count": 120,
+                                                "percentage": 20,
+                                                "avg_recency": 7.2,
+                                                "avg_frequency": 12.3,
+                                                "avg_monetary": 985.45,
+                                                "recommended_actions": [
+                                                    "Programa de fidelidade",
+                                                    "Acesso antecipado a novos produtos"
+                                                ]
+                                            },
+                                            {
+                                                "name": "Loyal Customers",
+                                                "code": "211",
+                                                "count": 250,
+                                                "percentage": 42,
+                                                "avg_recency": 15.8,
+                                                "avg_frequency": 8.5,
+                                                "avg_monetary": 725.30,
+                                                "recommended_actions": [
+                                                    "Programa de indicação",
+                                                    "Descontos exclusivos"
+                                                ]
+                                            },
+                                            {
+                                                "name": "At Risk",
+                                                "code": "311",
+                                                "count": 85,
+                                                "percentage": 14,
+                                                "avg_recency": 45.2,
+                                                "avg_frequency": 6.1,
+                                                "avg_monetary": 512.75,
+                                                "recommended_actions": [
+                                                    "Campanha de reativação",
+                                                    "Oferta especial de retorno"
+                                                ]
+                                            },
+                                            {
+                                                "name": "Lost Customers",
+                                                "code": "411",
+                                                "count": 145,
+                                                "percentage": 24,
+                                                "avg_recency": 120.5,
+                                                "avg_frequency": 2.3,
+                                                "avg_monetary": 285.60,
+                                                "recommended_actions": [
+                                                    "Pesquisa de satisfação",
+                                                    "Desconto agressivo para retorno"
+                                                ]
+                                            }
+                                        ],
+                                        "customer_lifetime_value": {
+                                            "average": 2450.75,
+                                            "by_segment": {
+                                                "Champions": 5230.45,
+                                                "Loyal Customers": 3120.80,
+                                                "At Risk": 1850.25,
+                                                "Lost Customers": 950.15
+                                            }
+                                        }
+                                    }
+                                }
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Event History Section -->
+                <div class="card mb-4">
+                    <div class="card-header">Histórico de Eventos (Últimos 30 dias)</div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Data/Hora</th>
+                                        <th>Webhook</th>
+                                        <th>Evento</th>
+                                        <th>Status</th>
+                                        <th>Payload</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Event history will be populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Integrations Section -->
+                <div class="card mb-4">
+                    <div class="card-header">Integrações Disponíveis</div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4 col-sm-6 mb-3">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <img src="https://rtz.digital/wp-content/uploads/2025/03/1.png" alt="Mautic" height="50" class="mb-3">
+                                        <h5>Mautic</h5>
+                                        <button class="btn btn-sm btn-outline-primary">Em breve</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 col-sm-6 mb-3">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <img src="https://rtz.digital/wp-content/uploads/2025/03/2.png" alt="Active Campaign" height="50" class="mb-3">
+                                        <h5>Active Campaign</h5>
+                                        <button class="btn btn-sm btn-outline-primary">Em breve</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 col-sm-6 mb-3">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <img src="https://rtz.digital/wp-content/uploads/2025/03/3.png" alt="RD Marketing" height="50" class="mb-3">
+                                        <h5>RD Marketing</h5>
+                                        <button class="btn btn-sm btn-outline-primary">Em breve</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 col-sm-6 mb-3">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <img src="https://rtz.digital/wp-content/uploads/2025/03/4.png" alt="RD CRM" height="50" class="mb-3">
+                                        <h5>RD CRM</h5>
+                                        <button class="btn btn-sm btn-outline-primary">Em breve</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 col-sm-6 mb-3">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <img src="https://rtz.digital/wp-content/uploads/2025/03/5.png" alt="Pipedrive" height="50" class="mb-3">
+                                        <h5>Pipedrive</h5>
+                                        <button class="btn btn-sm btn-outline-primary">Em breve</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 col-sm-6 mb-3">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <img src="https://rtz.digital/wp-content/uploads/2025/03/6.png" alt="Hubspot CRM" height="50" class="mb-3">
+                                        <h5>Hubspot CRM</h5>
+                                        <button class="btn btn-sm btn-outline-primary">Em breve</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="sidebar.js"></script>
+    <script src="integracao.js"></script>
+</body>
+</html>
