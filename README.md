@@ -1,109 +1,230 @@
 # RFM Insights
 
-RFM Insights is a powerful customer segmentation and analysis platform that uses RFM (Recency, Frequency, Monetary) analysis to help businesses understand and target their customers effectively.
+RFM Insights is a web application for analyzing customer behavior using the RFM (Recency, Frequency, Monetary) model.
 
-## Features
+## Prerequisites
 
-- **RFM Analysis**: Analyze your customer data using the RFM methodology
-- **Customer Segmentation**: Automatically segment customers based on their purchasing behavior
-- **Marketing Recommendations**: Get AI-powered recommendations for each customer segment
-- **Message Generation**: Create targeted marketing messages for different segments
-- **Integration**: Connect with your existing data sources
+- Python 3.11 or higher
+- Node.js 18 or higher (for frontend development)
+- Docker and Docker Compose (for production deployment)
+- Nginx (for production deployment)
+- PostgreSQL 14 or higher
+- Domain names configured for app.rfminsights.com.br and api.rfminsights.com.br
 
-## Technology Stack
+## Pre-deployment Setup
 
-- **Frontend**: HTML, CSS, JavaScript
-- **Backend**: Python with FastAPI
-- **Database**: PostgreSQL
-- **Containerization**: Docker and Docker Compose
-- **Web Server**: Nginx
-
-## Deployment Instructions
-
-### Prerequisites
-
-- Docker and Docker Compose installed
-- Domain names configured (for production deployment)
-- Git (optional)
-
-### Local Deployment (Windows)
-
-1. Make sure Docker Desktop for Windows is installed and running
-
-2. Clone or download this repository
-
-3. Open PowerShell as Administrator and navigate to the project directory
-
-4. Run the Windows deployment script:
-   ```powershell
-   .\deploy-windows.ps1
+### 1. Domain Configuration
+1. Register your domains (if not already done)
+2. Add DNS A records:
    ```
-
-5. Follow the on-screen instructions to complete the deployment
-
-6. Access the application at:
-   - Frontend: http://localhost
-   - API: http://localhost:8000
-
-### Production Deployment (Linux)
-
-1. Make sure Docker and Docker Compose are installed
-
-2. Ensure your domain names (app.rfminsights.com.br and api.rfminsights.com.br) are pointing to your server
-
-3. Clone or download this repository
-
-4. Navigate to the project directory and run the deployment script:
-   ```bash
-   sudo bash deploy.sh
+   app.rfminsights.com.br  → Your server IP
+   api.rfminsights.com.br  → Your server IP
    ```
+3. Wait for DNS propagation (can take up to 48 hours)
 
-5. Follow the on-screen instructions to complete the deployment
+### 2. SSL Certificates
+Option 1 - Using Let's Encrypt (Recommended):
+```bash
+# Install certbot
+sudo apt-get update
+sudo apt-get install certbot
 
-6. Access the application at:
-   - Frontend: https://app.rfminsights.com.br
-   - API: https://api.rfminsights.com.br
+# Generate certificates
+sudo certbot certonly --standalone -d app.rfminsights.com.br
+sudo certbot certonly --standalone -d api.rfminsights.com.br
 
-## Configuration
+# Copy certificates
+sudo cp /etc/letsencrypt/live/app.rfminsights.com.br/* nginx/ssl/
+sudo cp /etc/letsencrypt/live/api.rfminsights.com.br/* nginx/ssl/
+```
 
-### Environment Variables
+Option 2 - Using your own certificates:
+- Place your .crt and .key files in the nginx/ssl/ directory
+- Update paths in nginx configurations
 
-The application uses the following environment variables:
+### 3. Environment Setup
 
-- `DATABASE_URL`: The PostgreSQL database connection URL
-- `JWT_SECRET_KEY`: Secret key for JWT token generation
-- `OPENAI_API_KEY`: API key for OpenAI integration
-- `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`: AWS credentials for email delivery
+1. Frontend (.env):
+```bash
+# Required
+REACT_APP_API_URL=https://api.rfminsights.com.br
+REACT_APP_AUTH_DOMAIN=rfminsights.com.br
+REACT_APP_AUTH_CLIENT_ID=your_auth_client_id
 
-These variables can be configured in the `.env` file.
+# Optional
+REACT_APP_ENV=production
+REACT_APP_API_TIMEOUT=30000
+REACT_APP_ENABLE_ANALYTICS=true
+```
 
-## Database
+2. Backend (.env):
+```bash
+# Required
+DB_HOST=postgres
+DB_PORT=5432
+DB_NAME=rfm_db
+DB_USER=rfm_user
+DB_PASSWORD=strong_password
+JWT_SECRET=your_secure_jwt_secret
 
-The application uses PostgreSQL for data storage. The database schema includes the following main tables:
+# Optional
+LOG_LEVEL=info
+ENABLE_MONITORING=true
+AWS_REGION=us-east-1
+```
 
-- `users`: User accounts and authentication
-- `rfm_analyses`: RFM analysis results and metadata
-- `messages`: Marketing messages generated for customer segments
-- `api_keys`: API keys for integration with other systems
+## Installation
 
-The database is automatically initialized during deployment.
+### Local Development Setup
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/rfminsights.git
+cd rfminsights
+```
+
+2. Run the installation script:
+```bash
+chmod +x install.sh
+./install.sh
+```
+
+3. Initialize the database:
+```bash
+cd api
+source venv/bin/activate
+python -c "from src.models.database import init_db; init_db()"
+```
+
+### Production Deployment
+
+1. Prepare the server:
+```bash
+# Install Docker and Docker Compose
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+
+# Create necessary directories
+mkdir -p nginx/ssl logs/{frontend,backend}
+```
+
+2. Configure environment:
+```bash
+# Copy and edit environment files
+cp app/.env.example app/.env
+cp api/.env.example api/.env
+nano app/.env
+nano api/.env
+```
+
+3. Deploy using Docker:
+```bash
+# Build and start services
+docker-compose up -d
+
+# Check service status
+docker-compose ps
+
+# View logs
+docker-compose logs -f
+```
+
+4. Verify deployment:
+```bash
+# Check frontend
+curl -I https://app.rfminsights.com.br
+
+# Check backend
+curl -I https://api.rfminsights.com.br/health
+```
 
 ## Troubleshooting
 
-If you encounter any issues during deployment:
+### Common Issues
 
-1. Check the logs in the `logs/` directory
-2. Verify that all required services are running:
-   ```
-   docker-compose ps
-   ```
-3. Ensure that the environment variables are correctly set in the `.env` file
-4. Make sure ports 80, 443, and 8000 are not being used by other applications
+1. Database Connection:
+```bash
+# Check database logs
+docker-compose logs postgres
+
+# Connect to database
+docker-compose exec postgres psql -U rfm_user -d rfm_db
+```
+
+2. Nginx Configuration:
+```bash
+# Test nginx configuration
+docker-compose exec web nginx -t
+
+# Check nginx logs
+docker-compose logs web
+```
+
+3. SSL Certificate Issues:
+```bash
+# Verify certificates
+openssl x509 -in nginx/ssl/app.rfminsights.com.br.crt -text
+openssl x509 -in nginx/ssl/api.rfminsights.com.br.crt -text
+```
+
+4. Permission Issues:
+```bash
+# Fix log permissions
+sudo chown -R 1000:1000 logs/
+sudo chmod -R 755 logs/
+```
+
+## Monitoring
+
+### Log Locations
+- Frontend: `logs/frontend/access.log` and `logs/frontend/error.log`
+- Backend: `logs/backend/app.log` and `logs/backend/error.log`
+- Nginx: `logs/nginx/access.log` and `logs/nginx/error.log`
+- Database: View using `docker-compose logs postgres`
+
+### Health Checks
+- Frontend: https://app.rfminsights.com.br/health.html
+- Backend: https://api.rfminsights.com.br/health
+- Database: `docker-compose exec postgres pg_isready`
+
+## Backup and Restore
+
+### Database Backup
+```bash
+# Create backup
+docker-compose exec postgres pg_dump -U rfm_user rfm_db > backup.sql
+
+# Restore from backup
+cat backup.sql | docker-compose exec -T postgres psql -U rfm_user -d rfm_db
+```
+
+### File Backup
+```bash
+# Backup uploaded files
+tar -czf uploads_backup.tar.gz uploads/
+
+# Backup logs
+tar -czf logs_backup.tar.gz logs/
+```
+
+## Security
+
+- All sensitive data must be stored in environment variables
+- SSL certificates are required for production
+- API endpoints are protected with JWT authentication
+- CORS is configured to allow only specific origins
+- Regular security updates:
+  ```bash
+  # Update containers
+  docker-compose pull
+  docker-compose up -d
+  
+  # Update system packages
+  sudo apt update && sudo apt upgrade
+  ```
 
 ## License
 
-This software is proprietary and confidential.
-
-## Support
-
-For support, please contact support@rfminsights.com.br 
+This project is licensed under the MIT License - see the LICENSE file for details. 
