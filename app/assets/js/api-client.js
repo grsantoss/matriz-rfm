@@ -4,11 +4,50 @@
  * This module handles all communication with the backend API
  */
 
-const API_BASE_URL = '/api';
-
-class APIClient {
+// API Client
+class ApiClient {
     constructor() {
-        this.token = localStorage.getItem('auth_token');
+        this.baseUrl = window.appConfig.apiUrl;
+        this.version = window.appConfig.apiVersion;
+        this.timeout = window.appConfig.apiTimeout;
+    }
+
+    async request(endpoint, options = {}) {
+        const url = `${this.baseUrl}/${this.version}${endpoint}`;
+        const headers = {
+            'Content-Type': 'application/json',
+            ...options.headers
+        };
+
+        // Add authentication token if available
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+
+            const response = await fetch(url, {
+                ...options,
+                headers,
+                signal: controller.signal
+            });
+
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                throw new Error('Request timeout');
+            }
+            throw error;
+        }
     }
 
     /**
@@ -16,7 +55,6 @@ class APIClient {
      * @param {string} token - JWT token
      */
     setToken(token) {
-        this.token = token;
         localStorage.setItem('auth_token', token);
     }
 
@@ -24,7 +62,6 @@ class APIClient {
      * Clear the authentication token
      */
     clearToken() {
-        this.token = null;
         localStorage.removeItem('auth_token');
     }
 
@@ -37,8 +74,9 @@ class APIClient {
             'Content-Type': 'application/json'
         };
 
-        if (this.token) {
-            headers['Authorization'] = `Bearer ${this.token}`;
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
         }
 
         return headers;
@@ -73,7 +111,7 @@ class APIClient {
      */
     async get(endpoint) {
         try {
-            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            const response = await fetch(`${this.baseUrl}/${this.version}${endpoint}`, {
                 method: 'GET',
                 headers: this.getHeaders()
             });
@@ -93,7 +131,7 @@ class APIClient {
      */
     async post(endpoint, data) {
         try {
-            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            const response = await fetch(`${this.baseUrl}/${this.version}${endpoint}`, {
                 method: 'POST',
                 headers: this.getHeaders(),
                 body: JSON.stringify(data)
@@ -114,7 +152,7 @@ class APIClient {
      */
     async put(endpoint, data) {
         try {
-            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            const response = await fetch(`${this.baseUrl}/${this.version}${endpoint}`, {
                 method: 'PUT',
                 headers: this.getHeaders(),
                 body: JSON.stringify(data)
@@ -134,7 +172,7 @@ class APIClient {
      */
     async delete(endpoint) {
         try {
-            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            const response = await fetch(`${this.baseUrl}/${this.version}${endpoint}`, {
                 method: 'DELETE',
                 headers: this.getHeaders()
             });
@@ -155,11 +193,12 @@ class APIClient {
     async uploadFile(endpoint, formData) {
         try {
             const headers = {};
-            if (this.token) {
-                headers['Authorization'] = `Bearer ${this.token}`;
+            const token = localStorage.getItem('auth_token');
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
             }
 
-            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            const response = await fetch(`${this.baseUrl}/${this.version}${endpoint}`, {
                 method: 'POST',
                 headers: headers,
                 body: formData
@@ -173,66 +212,79 @@ class APIClient {
     }
 
     // Authentication endpoints
-    async login(email, password) {
-        return await this.post('/auth/token', {
-            username: email,
-            password: password
+    async login(credentials) {
+        return this.request('/auth/login', {
+            method: 'POST',
+            body: JSON.stringify(credentials)
         });
     }
 
     async register(userData) {
-        return await this.post('/auth/register', userData);
+        return this.request('/auth/register', {
+            method: 'POST',
+            body: JSON.stringify(userData)
+        });
     }
 
     async getUserProfile() {
-        return await this.get('/auth/me');
+        return this.request('/auth/me');
     }
 
     async updateUserProfile(userData) {
-        return await this.put('/auth/me', userData);
+        return this.put('/auth/me', userData);
     }
 
     async requestPasswordReset(email) {
-        return await this.post('/auth/password-reset', { email });
+        return this.request('/auth/password-reset', {
+            method: 'POST',
+            body: JSON.stringify({ email })
+        });
     }
 
     async resetPassword(token, newPassword) {
-        return await this.post('/auth/password-reset/confirm', {
-            token,
-            new_password: newPassword
+        return this.request('/auth/password-reset/confirm', {
+            method: 'POST',
+            body: JSON.stringify({
+                token,
+                new_password: newPassword
+            })
         });
     }
 
     // RFM Analysis endpoints
     async analyzeRFM(formData) {
-        return await this.uploadFile('/rfm/analyze-rfm', formData);
+        return this.request('/rfm/analyze', {
+            method: 'POST',
+            body: JSON.stringify(formData)
+        });
     }
 
     async getAnalysisHistory(limit = 5) {
-        return await this.get(`/rfm/analysis-history?limit=${limit}`);
+        return this.get(`/rfm/analysis-history?limit=${limit}`);
     }
 
     async getSegmentDescriptions() {
-        return await this.get('/rfm/segment-descriptions');
+        return this.get('/rfm/segment-descriptions');
     }
 
     // Marketplace endpoints
     async generateMessage(messageData) {
-        return await this.post('/marketplace/generate-message', messageData);
+        return this.post('/marketplace/generate-message', messageData);
     }
 
     async regenerateMessage(messageId) {
-        return await this.post('/marketplace/regenerate-message', { messageId });
+        return this.post('/marketplace/regenerate-message', { messageId });
     }
 
     async getUserMessages(limit = 10, offset = 0) {
-        return await this.get(`/marketplace/messages?limit=${limit}&offset=${offset}`);
+        return this.get(`/marketplace/messages?limit=${limit}&offset=${offset}`);
     }
 
     async generateInsight(insightData) {
-        return await this.post('/marketplace/generate-insight', insightData);
+        return this.post('/marketplace/generate-insight', insightData);
     }
 }
 
-// Create and export a singleton instance
-const apiClient = new APIClient();
+// Create and export API client instance
+const apiClient = new ApiClient();
+window.apiClient = apiClient;

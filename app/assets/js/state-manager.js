@@ -24,7 +24,7 @@ class StateManager {
             error: null
         };
         
-        this.listeners = [];
+        this.listeners = new Set();
         this.init();
     }
     
@@ -89,7 +89,7 @@ class StateManager {
      */
     setState(newState) {
         this.state = { ...this.state, ...newState };
-        this.notifyListeners();
+        this.notify();
     }
     
     /**
@@ -98,18 +98,14 @@ class StateManager {
      * @returns {Function} Unsubscribe function
      */
     subscribe(listener) {
-        this.listeners.push(listener);
-        
-        // Return unsubscribe function
-        return () => {
-            this.listeners = this.listeners.filter(l => l !== listener);
-        };
+        this.listeners.add(listener);
+        return () => this.listeners.delete(listener);
     }
     
     /**
      * Notify all listeners of state change
      */
-    notifyListeners() {
+    notify() {
         this.listeners.forEach(listener => listener(this.state));
     }
     
@@ -255,7 +251,135 @@ class StateManager {
             insights: [insight, ...this.state.insights]
         });
     }
+    
+    /**
+     * Reset state to initial values
+     */
+    resetState() {
+        this.setState({
+            user: null,
+            isAuthenticated: false,
+            rfmAnalysis: null,
+            messages: [],
+            insights: [],
+            loading: false,
+            error: null
+        });
+    }
+    
+    /**
+     * Authenticate user
+     * @param {Object} credentials - Login credentials
+     * @returns {Promise<Object>} Authentication response
+     */
+    async login(credentials) {
+        try {
+            this.setState({ loading: true, error: null });
+            const response = await window.apiClient.login(credentials);
+            this.setState({
+                user: response.user,
+                isAuthenticated: true,
+                loading: false
+            });
+            return response;
+        } catch (error) {
+            this.setState({
+                error: error.message,
+                loading: false
+            });
+            throw error;
+        }
+    }
+    
+    /**
+     * Logout user
+     * @returns {Promise<boolean>} Logout success
+     */
+    async logout() {
+        try {
+            this.setState({ loading: true, error: null });
+            await window.apiClient.logout();
+            this.resetState();
+            return true;
+        } catch (error) {
+            this.setState({
+                error: error.message,
+                loading: false
+            });
+            throw error;
+        }
+    }
+    
+    /**
+     * Analyze RFM
+     * @param {Object} data - RFM analysis data
+     * @returns {Promise<Object>} RFM analysis result
+     */
+    async analyzeRFM(data) {
+        try {
+            this.setState({ loading: true, error: null });
+            const response = await window.apiClient.getRfmAnalysis(data);
+            this.setState({
+                rfmAnalysis: response,
+                loading: false
+            });
+            return response;
+        } catch (error) {
+            this.setState({
+                error: error.message,
+                loading: false
+            });
+            throw error;
+        }
+    }
+    
+    /**
+     * Generate message
+     * @param {Object} data - Message generation data
+     * @returns {Promise<Object>} Generated message
+     */
+    async generateMessage(data) {
+        try {
+            this.setState({ loading: true, error: null });
+            const response = await window.apiClient.generateMessage(data);
+            this.setState({
+                messages: [...this.state.messages, response],
+                loading: false
+            });
+            return response;
+        } catch (error) {
+            this.setState({
+                error: error.message,
+                loading: false
+            });
+            throw error;
+        }
+    }
+    
+    /**
+     * Generate insight
+     * @param {Object} data - Insight generation data
+     * @returns {Promise<Object>} Generated insight
+     */
+    async generateInsight(data) {
+        try {
+            this.setState({ loading: true, error: null });
+            const response = await window.apiClient.generateInsight(data);
+            this.setState({
+                insights: [...this.state.insights, response],
+                loading: false
+            });
+            return response;
+        } catch (error) {
+            this.setState({
+                error: error.message,
+                loading: false
+            });
+            throw error;
+        }
+    }
 }
 
 // Create and export a singleton instance
 const stateManager = new StateManager();
+window.stateManager = stateManager;

@@ -6,8 +6,9 @@
 
 class App {
     constructor() {
-        this.apiClient = null;
-        this.stateManager = null;
+        this.stateManager = window.stateManager;
+        this.apiClient = window.apiClient;
+        this.config = window.appConfig;
         this.notificationManager = null;
         this.sidebar = null;
         this.userProfile = null;
@@ -45,10 +46,11 @@ class App {
         // Check authentication
         this.checkAuthentication();
         
+        // Initialize event listeners
+        this.initializeEventListeners();
+        
         // Subscribe to state changes
-        this.stateManager.subscribe(state => {
-            this.updateUI(state);
-        });
+        this.stateManager.subscribe(this.handleStateChange.bind(this));
     }
     
     /**
@@ -130,6 +132,44 @@ class App {
     }
     
     /**
+     * Initialize event listeners
+     */
+    initializeEventListeners() {
+        // Login form
+        const loginForm = document.getElementById('loginForm');
+        if (loginForm) {
+            loginForm.addEventListener('submit', this.handleLogin.bind(this));
+        }
+
+        // RFM Analysis form
+        const rfmForm = document.getElementById('rfmForm');
+        if (rfmForm) {
+            rfmForm.addEventListener('submit', this.handleRfmAnalysis.bind(this));
+        }
+
+        // Message generation form
+        const messageForm = document.getElementById('messageForm');
+        if (messageForm) {
+            messageForm.addEventListener('submit', this.handleMessageGeneration.bind(this));
+        }
+
+        // Insight generation form
+        const insightForm = document.getElementById('insightForm');
+        if (insightForm) {
+            insightForm.addEventListener('submit', this.handleInsightGeneration.bind(this));
+        }
+    }
+    
+    /**
+     * Handle state change
+     * @param {Object} state - Application state
+     */
+    handleStateChange(state) {
+        // Update UI based on state changes
+        this.updateUI(state);
+    }
+    
+    /**
      * Update UI based on state
      * @param {Object} state - Application state
      */
@@ -168,6 +208,31 @@ class App {
         
         // Show/hide loading indicator
         this.toggleLoading(state.loading);
+        
+        // Update loading indicators
+        const loadingElements = document.querySelectorAll('.loading');
+        loadingElements.forEach(element => {
+            element.style.display = state.loading ? 'block' : 'none';
+        });
+
+        // Update error messages
+        const errorElement = document.getElementById('errorMessage');
+        if (errorElement) {
+            errorElement.textContent = state.error || '';
+            errorElement.style.display = state.error ? 'block' : 'none';
+        }
+
+        // Update authentication UI
+        const authElements = document.querySelectorAll('.auth-only');
+        authElements.forEach(element => {
+            element.style.display = state.isAuthenticated ? 'block' : 'none';
+        });
+
+        // Update user information
+        const userElement = document.getElementById('userInfo');
+        if (userElement && state.user) {
+            userElement.textContent = `Welcome, ${state.user.name}`;
+        }
     }
     
     /**
@@ -204,6 +269,171 @@ class App {
         
         // Redirect to login page
         window.location.href = '/login.html';
+    }
+
+    async handleLogin(event) {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+        const credentials = {
+            email: formData.get('email'),
+            password: formData.get('password')
+        };
+
+        try {
+            await this.stateManager.login(credentials);
+            this.showNotification('Login successful!', 'success');
+            this.redirectToDashboard();
+        } catch (error) {
+            this.showNotification(error.message, 'error');
+        }
+    }
+
+    async handleRfmAnalysis(event) {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+        const data = {
+            file: formData.get('file'),
+            parameters: {
+                recencyWeight: parseFloat(formData.get('recencyWeight')),
+                frequencyWeight: parseFloat(formData.get('frequencyWeight')),
+                monetaryWeight: parseFloat(formData.get('monetaryWeight'))
+            }
+        };
+
+        try {
+            const result = await this.stateManager.analyzeRFM(data);
+            this.displayRfmResults(result);
+            this.showNotification('RFM analysis completed successfully!', 'success');
+        } catch (error) {
+            this.showNotification(error.message, 'error');
+        }
+    }
+
+    async handleMessageGeneration(event) {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+        const data = {
+            segment: formData.get('segment'),
+            tone: formData.get('tone'),
+            length: formData.get('length')
+        };
+
+        try {
+            const message = await this.stateManager.generateMessage(data);
+            this.displayMessage(message);
+            this.showNotification('Message generated successfully!', 'success');
+        } catch (error) {
+            this.showNotification(error.message, 'error');
+        }
+    }
+
+    async handleInsightGeneration(event) {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+        const data = {
+            segment: formData.get('segment'),
+            metric: formData.get('metric'),
+            timeframe: formData.get('timeframe')
+        };
+
+        try {
+            const insight = await this.stateManager.generateInsight(data);
+            this.displayInsight(insight);
+            this.showNotification('Insight generated successfully!', 'success');
+        } catch (error) {
+            this.showNotification(error.message, 'error');
+        }
+    }
+
+    showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    }
+
+    redirectToDashboard() {
+        window.location.href = '/dashboard.html';
+    }
+
+    displayRfmResults(result) {
+        const resultsContainer = document.getElementById('rfmResults');
+        if (resultsContainer) {
+            resultsContainer.innerHTML = `
+                <h3>RFM Analysis Results</h3>
+                <div class="results-grid">
+                    ${this.generateRfmResultsHtml(result)}
+                </div>
+            `;
+        }
+    }
+
+    displayMessage(message) {
+        const messagesContainer = document.getElementById('messagesContainer');
+        if (messagesContainer) {
+            const messageElement = document.createElement('div');
+            messageElement.className = 'message';
+            messageElement.innerHTML = `
+                <h4>${message.title}</h4>
+                <p>${message.content}</p>
+                <div class="message-meta">
+                    <span>Segment: ${message.segment}</span>
+                    <span>Tone: ${message.tone}</span>
+                </div>
+            `;
+            messagesContainer.appendChild(messageElement);
+        }
+    }
+
+    displayInsight(insight) {
+        const insightsContainer = document.getElementById('insightsContainer');
+        if (insightsContainer) {
+            const insightElement = document.createElement('div');
+            insightElement.className = 'insight';
+            insightElement.innerHTML = `
+                <h4>${insight.title}</h4>
+                <p>${insight.content}</p>
+                <div class="insight-meta">
+                    <span>Segment: ${insight.segment}</span>
+                    <span>Metric: ${insight.metric}</span>
+                </div>
+            `;
+            insightsContainer.appendChild(insightElement);
+        }
+    }
+
+    generateRfmResultsHtml(result) {
+        return `
+            <div class="result-card">
+                <h4>Customer Segments</h4>
+                <ul>
+                    ${Object.entries(result.segments).map(([segment, count]) => `
+                        <li>${segment}: ${count} customers</li>
+                    `).join('')}
+                </ul>
+            </div>
+            <div class="result-card">
+                <h4>Key Metrics</h4>
+                <ul>
+                    <li>Average Recency: ${result.metrics.avgRecency} days</li>
+                    <li>Average Frequency: ${result.metrics.avgFrequency}</li>
+                    <li>Average Monetary: $${result.metrics.avgMonetary.toFixed(2)}</li>
+                </ul>
+            </div>
+            <div class="result-card">
+                <h4>Recommendations</h4>
+                <ul>
+                    ${result.recommendations.map(rec => `
+                        <li>${rec}</li>
+                    `).join('')}
+                </ul>
+            </div>
+        `;
     }
 }
 
