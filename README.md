@@ -1,230 +1,136 @@
-# RFM Insights
+# RFM Insights - Análise RFM e Geração de Mensagens
 
-RFM Insights is a web application for analyzing customer behavior using the RFM (Recency, Frequency, Monetary) model.
+## Descrição
+RFM Insights é uma aplicação web para análise RFM (Recency, Frequency, Monetary) de clientes e geração de mensagens personalizadas. A aplicação permite que empresas analisem o comportamento de seus clientes e gerem mensagens personalizadas para diferentes segmentos.
 
-## Prerequisites
+## Estrutura do Projeto
 
-- Python 3.11 or higher
-- Node.js 18 or higher (for frontend development)
-- Docker and Docker Compose (for production deployment)
-- Nginx (for production deployment)
-- PostgreSQL 14 or higher
-- Domain names configured for app.rfminsights.com.br and api.rfminsights.com.br
-
-## Pre-deployment Setup
-
-### 1. Domain Configuration
-1. Register your domains (if not already done)
-2. Add DNS A records:
-   ```
-   app.rfminsights.com.br  → Your server IP
-   api.rfminsights.com.br  → Your server IP
-   ```
-3. Wait for DNS propagation (can take up to 48 hours)
-
-### 2. SSL Certificates
-Option 1 - Using Let's Encrypt (Recommended):
-```bash
-# Install certbot
-sudo apt-get update
-sudo apt-get install certbot
-
-# Generate certificates
-sudo certbot certonly --standalone -d app.rfminsights.com.br
-sudo certbot certonly --standalone -d api.rfminsights.com.br
-
-# Copy certificates
-sudo cp /etc/letsencrypt/live/app.rfminsights.com.br/* nginx/ssl/
-sudo cp /etc/letsencrypt/live/api.rfminsights.com.br/* nginx/ssl/
+```
+rfm-insights/
+├── app/                      # Frontend da aplicação
+│   ├── assets/              # Recursos estáticos
+│   │   ├── css/            # Arquivos CSS
+│   │   └── js/             # Arquivos JavaScript
+│   │       ├── api-client.js    # Cliente API
+│   │       ├── config.js        # Configuração da aplicação
+│   │       ├── state-manager.js # Gerenciador de estado
+│   │       └── app.js           # Aplicação principal
+│   ├── index.html          # Página principal
+│   └── .env.example        # Exemplo de variáveis de ambiente
+├── api/                     # Backend da aplicação
+│   └── src/                # Código fonte do backend
+│       ├── routes/         # Rotas da API
+│       ├── controllers/    # Controladores
+│       └── models/         # Modelos de dados
+├── config/                 # Configurações do projeto
+│   ├── config.py          # Configuração principal
+│   ├── env_validator.py   # Validação de ambiente
+│   ├── monitoring_config.py # Configuração de monitoramento
+│   └── logging_config.py  # Configuração de logs
+├── nginx/                  # Configuração do Nginx
+│   └── nginx.conf         # Arquivo de configuração
+├── docker-compose.yml     # Configuração do Docker Compose
+├── Dockerfile.api         # Dockerfile para a API
+├── install.sh            # Script de instalação
+└── deploy.sh             # Script de deploy
 ```
 
-Option 2 - Using your own certificates:
-- Place your .crt and .key files in the nginx/ssl/ directory
-- Update paths in nginx configurations
+## Configuração
 
-### 3. Environment Setup
+### Variáveis de Ambiente
+A aplicação utiliza variáveis de ambiente para configuração. Um arquivo `.env.example` está disponível como modelo:
 
-1. Frontend (.env):
-```bash
-# Required
-REACT_APP_API_URL=https://api.rfminsights.com.br
-REACT_APP_AUTH_DOMAIN=rfminsights.com.br
-REACT_APP_AUTH_CLIENT_ID=your_auth_client_id
+```env
+# Frontend Environment Variables
+API_URL=https://api.rfminsights.com.br
+API_VERSION=v1
+API_TIMEOUT=30000
 
-# Optional
-REACT_APP_ENV=production
-REACT_APP_API_TIMEOUT=30000
-REACT_APP_ENABLE_ANALYTICS=true
+# Feature Flags
+ENABLE_ANALYTICS=true
+ENABLE_LOGGING=true
+
+# Authentication
+AUTH_DOMAIN=rfminsights.com.br
+AUTH_ENDPOINT=/auth
+AUTH_REDIRECT_URI=https://app.rfminsights.com.br/callback.html
+
+# Application Settings
+APP_NAME=RFM Insights
+APP_VERSION=1.0.0
+APP_ENV=production
 ```
 
-2. Backend (.env):
-```bash
-# Required
-DB_HOST=postgres
-DB_PORT=5432
-DB_NAME=rfm_db
-DB_USER=rfm_user
-DB_PASSWORD=strong_password
-JWT_SECRET=your_secure_jwt_secret
+### Sistema de Configuração
+A aplicação utiliza um sistema de configuração centralizado através do arquivo `config.js`, que:
+- Carrega variáveis de ambiente do arquivo `.env`
+- Fornece valores padrão para configurações
+- Está disponível globalmente como `window.appConfig`
 
-# Optional
-LOG_LEVEL=info
-ENABLE_MONITORING=true
-AWS_REGION=us-east-1
+## Arquitetura
+
+### Frontend
+- **API Client**: Gerencia todas as comunicações com o backend
+- **State Manager**: Gerencia o estado global da aplicação
+- **App**: Inicializa e coordena os componentes da aplicação
+
+### Backend
+- API RESTful construída com Python
+- Estrutura modular com separação clara de responsabilidades
+- Sistema de autenticação JWT
+
+## Instalação
+
+1. Clone o repositório:
+```bash
+git clone https://github.com/seu-usuario/rfm-insights.git
+cd rfm-insights
 ```
 
-## Installation
-
-### Local Development Setup
-
-1. Clone the repository:
+2. Copie o arquivo de exemplo de variáveis de ambiente:
 ```bash
-git clone https://github.com/yourusername/rfminsights.git
-cd rfminsights
+cp app/.env.example app/.env
 ```
 
-2. Run the installation script:
+3. Execute o script de instalação:
 ```bash
-chmod +x install.sh
 ./install.sh
 ```
 
-3. Initialize the database:
+## Desenvolvimento
+
+Para iniciar o ambiente de desenvolvimento:
+
 ```bash
-cd api
-source venv/bin/activate
-python -c "from src.models.database import init_db; init_db()"
-```
-
-### Production Deployment
-
-1. Prepare the server:
-```bash
-# Install Docker and Docker Compose
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
-
-# Create necessary directories
-mkdir -p nginx/ssl logs/{frontend,backend}
-```
-
-2. Configure environment:
-```bash
-# Copy and edit environment files
-cp app/.env.example app/.env
-cp api/.env.example api/.env
-nano app/.env
-nano api/.env
-```
-
-3. Deploy using Docker:
-```bash
-# Build and start services
 docker-compose up -d
-
-# Check service status
-docker-compose ps
-
-# View logs
-docker-compose logs -f
 ```
 
-4. Verify deployment:
+A aplicação estará disponível em:
+- Frontend: http://localhost:3000
+- API: http://localhost:8000
+
+## Deploy
+
+Para fazer deploy da aplicação:
+
 ```bash
-# Check frontend
-curl -I https://app.rfminsights.com.br
-
-# Check backend
-curl -I https://api.rfminsights.com.br/health
+./deploy.sh
 ```
 
-## Troubleshooting
+## Contribuição
 
-### Common Issues
+1. Faça um fork do projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
+5. Abra um Pull Request
 
-1. Database Connection:
-```bash
-# Check database logs
-docker-compose logs postgres
+## Licença
 
-# Connect to database
-docker-compose exec postgres psql -U rfm_user -d rfm_db
-```
+Este projeto está licenciado sob a licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
 
-2. Nginx Configuration:
-```bash
-# Test nginx configuration
-docker-compose exec web nginx -t
+## Contato
 
-# Check nginx logs
-docker-compose logs web
-```
+Seu Nome - [@seu_twitter](https://twitter.com/seu_twitter) - email@exemplo.com
 
-3. SSL Certificate Issues:
-```bash
-# Verify certificates
-openssl x509 -in nginx/ssl/app.rfminsights.com.br.crt -text
-openssl x509 -in nginx/ssl/api.rfminsights.com.br.crt -text
-```
-
-4. Permission Issues:
-```bash
-# Fix log permissions
-sudo chown -R 1000:1000 logs/
-sudo chmod -R 755 logs/
-```
-
-## Monitoring
-
-### Log Locations
-- Frontend: `logs/frontend/access.log` and `logs/frontend/error.log`
-- Backend: `logs/backend/app.log` and `logs/backend/error.log`
-- Nginx: `logs/nginx/access.log` and `logs/nginx/error.log`
-- Database: View using `docker-compose logs postgres`
-
-### Health Checks
-- Frontend: https://app.rfminsights.com.br/health.html
-- Backend: https://api.rfminsights.com.br/health
-- Database: `docker-compose exec postgres pg_isready`
-
-## Backup and Restore
-
-### Database Backup
-```bash
-# Create backup
-docker-compose exec postgres pg_dump -U rfm_user rfm_db > backup.sql
-
-# Restore from backup
-cat backup.sql | docker-compose exec -T postgres psql -U rfm_user -d rfm_db
-```
-
-### File Backup
-```bash
-# Backup uploaded files
-tar -czf uploads_backup.tar.gz uploads/
-
-# Backup logs
-tar -czf logs_backup.tar.gz logs/
-```
-
-## Security
-
-- All sensitive data must be stored in environment variables
-- SSL certificates are required for production
-- API endpoints are protected with JWT authentication
-- CORS is configured to allow only specific origins
-- Regular security updates:
-  ```bash
-  # Update containers
-  docker-compose pull
-  docker-compose up -d
-  
-  # Update system packages
-  sudo apt update && sudo apt upgrade
-  ```
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details. 
+Link do Projeto: [https://github.com/seu-usuario/rfm-insights](https://github.com/seu-usuario/rfm-insights) 
