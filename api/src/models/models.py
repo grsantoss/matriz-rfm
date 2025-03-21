@@ -4,9 +4,8 @@ from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float, Date
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import uuid
-from datetime import datetime
 
-from .database import Base
+from database import Base
 
 # Function to generate UUID
 def generate_uuid():

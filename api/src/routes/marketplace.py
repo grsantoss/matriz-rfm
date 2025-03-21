@@ -14,13 +14,13 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 from reportlab.lib.units import inch
 
 # Import response utilities
-from ..models.api_utils import success_response, error_response, paginated_response
-from ..models.schemas import ResponseSuccess, ResponseError, PaginatedResponseSuccess
+from models.api_utils import success_response, error_response, paginated_response
+from models.schemas import ResponseSuccess, ResponseError, PaginatedResponseSuccess
 
 from backend import models
 from config import config
-from ..controllers.auth import get_current_user
-from ..models.database import get_db
+from controllers.auth import get_current_user
+from models.database import get_db
 
 router = APIRouter()
 

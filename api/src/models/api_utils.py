@@ -4,7 +4,7 @@ from fastapi import HTTPException, Request
 from typing import Any, Dict, List, Optional, Type, TypeVar, Union, Generic
 from pydantic import BaseModel
 
-from .schemas import ResponseSuccess, ResponseError, ResponseWarning, PaginatedResponseSuccess
+from schemas import ResponseSuccess, ResponseError, ResponseWarning, PaginatedResponseSuccess
 
 # Type variable for generic response functions
 T = TypeVar('T')

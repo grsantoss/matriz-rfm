@@ -9,11 +9,11 @@ import os
 from typing import List, Dict, Any
 
 # Import response utilities
-from ..models.api_utils import success_response
-from ..models.schemas import ResponseSuccess
+from models.api_utils import success_response
+from models.schemas import ResponseSuccess
 
 # Import RFM Analysis module
-from ..controllers.rfm_analysis import analyze_rfm_data
+from controllers.rfm_analysis import analyze_rfm_data
 
 # Create router
 router = APIRouter()
