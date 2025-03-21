@@ -75,11 +75,76 @@ A aplicação utiliza um sistema de configuração centralizado através do arqu
 - Estrutura modular com separação clara de responsabilidades
 - Sistema de autenticação JWT
 
-## Instalação
+## Installation Guide
 
-## Quick Start Guide
+### Prerequisites Installation
 
-### Prerequisites
+#### Installing Python (3.8+)
+```bash
+# Windows
+# Download from https://www.python.org/downloads/
+# Or use winget
+winget install Python.Python.3.11
+
+# Ubuntu/Debian
+sudo apt update
+sudo apt install python3 python3-pip python3-venv
+
+# Verify installation
+python --version  # or python3 --version on Linux
+```
+
+#### Installing Docker & Docker Compose
+```bash
+# Windows
+# Download Docker Desktop from https://www.docker.com/products/docker-desktop/
+# Or use winget
+winget install Docker.DockerDesktop
+
+# Ubuntu/Debian
+sudo apt update
+sudo apt install apt-transport-https ca-certificates curl software-properties-common
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+sudo apt update
+sudo apt install docker-ce docker-compose
+
+# Verify installation
+docker --version
+docker-compose --version
+```
+
+#### Installing PostgreSQL
+```bash
+# Windows
+# Download from https://www.postgresql.org/download/windows/
+# Or use winget
+winget install PostgreSQL.PostgreSQL
+
+# Ubuntu/Debian
+sudo apt update
+sudo apt install postgresql postgresql-contrib
+
+# Verify installation
+psql --version
+
+# Create database
+# Windows
+createdb -U postgres rfm_insights
+
+# Linux
+sudo -u postgres createdb rfm_insights
+```
+
+#### Setting up OpenAI API Key
+1. Create an account at [OpenAI Platform](https://platform.openai.com/)
+2. Navigate to API keys section
+3. Create a new secret key
+4. Add the key to your `.env` file as `OPENAI_API_KEY=your-key-here`
+
+### Quick Start Guide
+
+#### Prerequisites
 Before installation, ensure you have:
 1. Python 3.8 or higher
 2. Docker Desktop for Windows (or Docker + Docker Compose for Linux)
@@ -132,12 +197,27 @@ cp .env.template .env
 
 3. **Install Python dependencies**
 ```bash
+# Create and activate virtual environment (recommended)
+python -m venv venv
+# Windows
+venv\Scripts\activate
+# Linux/macOS
+source venv/bin/activate
+
+# Install dependencies
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
 4. **Initialize the database**
 ```bash
+# Create database if not exists
+# Windows
+createdb -U postgres rfm_insights
+# Linux
+sudo -u postgres createdb rfm_insights
+
+# Run migrations
 alembic upgrade head
 ```
 
@@ -148,6 +228,12 @@ docker-compose -f docker-compose-windows.yml up -d
 
 # Linux
 docker-compose up -d
+```
+
+6. **Create admin user (if not created automatically)**
+```bash
+# Run the following Python script
+python -c "from backend.security import create_admin_user; create_admin_user()"
 ```
 
 ### Verification
@@ -166,30 +252,77 @@ python3 scripts/verify_prerequisites.py
 
 #### Database Connection Issues
 1. **Error**: "Could not connect to database"
-   - Check PostgreSQL is running
+   - Check PostgreSQL is running:
+     ```bash
+     # Windows
+     net start postgresql
+     # Linux
+     sudo systemctl status postgresql
+     ```
    - Verify database credentials in .env
-   - Ensure database exists: `createdb rfm_insights`
-   - Check port 5432 is not blocked
+   - Ensure database exists:
+     ```bash
+     # Windows
+     createdb -U postgres rfm_insights
+     # Linux
+     sudo -u postgres createdb rfm_insights
+     ```
+   - Check port 5432 is not blocked:
+     ```bash
+     # Windows
+     netstat -an | findstr 5432
+     # Linux
+     netstat -an | grep 5432
+     ```
 
 2. **Error**: "Alembic migration failed"
-   - Reset migrations: `alembic downgrade base`
-   - Recreate migrations: `alembic revision --autogenerate -m "reset"`
-   - Apply migrations: `alembic upgrade head`
+   - Reset migrations:
+     ```bash
+     alembic downgrade base
+     ```
+   - Recreate migrations:
+     ```bash
+     alembic revision --autogenerate -m "reset"
+     ```
+   - Apply migrations:
+     ```bash
+     alembic upgrade head
+     ```
 
 #### Docker Issues
 1. **Error**: "Docker daemon not running"
    - Start Docker Desktop (Windows)
-   - Run `sudo systemctl start docker` (Linux)
+   - Run:
+     ```bash
+     # Linux
+     sudo systemctl start docker
+     ```
 
 2. **Error**: "Port already in use"
-   - Check running containers: `docker ps`
-   - Stop conflicting services
+   - Check running containers:
+     ```bash
+     docker ps
+     ```
+   - Stop conflicting services:
+     ```bash
+     # Example to stop service using port 80
+     # Windows
+     netstat -ano | findstr :80
+     taskkill /PID [PID] /F
+     # Linux
+     sudo lsof -i :80
+     sudo kill -9 [PID]
+     ```
    - Change ports in docker-compose.yml
 
 #### OpenAI Integration Issues
 1. **Error**: "Invalid API key"
    - Verify API key in .env
-   - Check OpenAI account status
+   - Check OpenAI account status:
+     ```bash
+     curl -s https://api.openai.com/v1/models \
+       -H "Authorization: Bearer $OPENAI_API_KEY" | jq
+     ```
    - Ensure sufficient API credits
 
 2. **Error**: "API rate limit exceeded"
@@ -206,15 +339,30 @@ python3 scripts/verify_prerequisites.py
 
 2. **Database Security**
    - Use strong passwords
-   - Enable SSL connections
-   - Regular backups
+   - Enable SSL connections:
+     ```bash
+     # In postgresql.conf
+     ssl = on
+     ```
+   - Regular backups:
+     ```bash
+     # Windows
+     pg_dump -U postgres rfm_insights > backup.sql
+     # Linux
+     sudo -u postgres pg_dump rfm_insights > backup.sql
+     ```
    - Limit database access
 
 3. **Application Security**
    - Change default admin password
    - Enable HTTPS
    - Regular security updates
-   - Monitor access logs
+   - Monitor access logs:
+     ```bash
+     # Check logs
+     cat logs/app.log
+     cat logs/error.log
+     ```
 
 ### Maintenance
 
@@ -240,10 +388,26 @@ cp .env .env.backup
 ```
 
 3. **Monitoring**
-- Check logs in `logs/` directory
+- Check logs in `logs/` directory:
+  ```bash
+  # Latest logs
+  tail -f logs/app.log
+  ```
 - Monitor API usage
-- Check disk space regularly
-- Monitor database performance
+- Check disk space regularly:
+  ```bash
+  # Windows
+  wmic logicaldisk get name,size,freespace
+  # Linux
+  df -h
+  ```
+- Monitor database performance:
+  ```bash
+  # Connect to PostgreSQL
+  psql -U postgres -d rfm_insights
+  # Check active connections
+  SELECT count(*) FROM pg_stat_activity;
+  ```
 
 ### Support and Resources
 

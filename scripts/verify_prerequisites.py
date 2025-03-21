@@ -11,6 +11,9 @@ from typing import List, Tuple
 import json
 import logging
 from pathlib import Path
+import urllib.parse
+import time
+import shutil
 
 # Configure logging
 logging.basicConfig(
@@ -34,9 +37,13 @@ class DeploymentVerifier:
             self.verify_docker,
             self.verify_ports,
             self.verify_database_connection,
+            self.verify_database_schema,
+            self.verify_user_creation,
             self.verify_openai_key,
             self.verify_directory_permissions,
-            self.verify_dependencies
+            self.verify_dependencies,
+            self.verify_network_connectivity,
+            self.verify_file_upload
         ]
 
         for check in checks:
@@ -93,7 +100,13 @@ class DeploymentVerifier:
             return
 
         if not env_path.exists():
-            self.warnings.append(".env file not found. Will be created from template.")
+            self.warnings.append(".env file not found. Creating from template.")
+            try:
+                # Create .env from template
+                shutil.copy(env_template_path, env_path)
+                logger.info("Created .env file from template. Please update with your settings.")
+            except Exception as e:
+                self.errors.append(f"Failed to create .env file: {str(e)}")
             return
 
         required_vars = [
@@ -119,6 +132,19 @@ class DeploymentVerifier:
         try:
             subprocess.run(["docker", "--version"], check=True, capture_output=True)
             subprocess.run(["docker-compose", "--version"], check=True, capture_output=True)
+            
+            # Check if Docker is running
+            result = subprocess.run(["docker", "info"], capture_output=True, text=True)
+            if result.returncode != 0:
+                self.errors.append("Docker daemon is not running. Please start Docker service.")
+                return
+                
+            # Check if user has Docker permissions
+            try:
+                subprocess.run(["docker", "ps"], check=True, capture_output=True)
+            except subprocess.CalledProcessError:
+                self.errors.append("Current user doesn't have permission to use Docker. Try using sudo or add user to docker group.")
+                
         except subprocess.CalledProcessError:
             self.errors.append("Docker or Docker Compose not installed properly")
         except FileNotFoundError:
@@ -160,9 +186,180 @@ class DeploymentVerifier:
                 host=db_config.get('DB_HOST', 'localhost'),
                 port=db_config.get('DB_PORT', '5432')
             )
+            
+            # Check database permissions
+            cursor = conn.cursor()
+            cursor.execute("SELECT current_user")
+            current_user = cursor.fetchone()[0]
+            
+            # Check if user has necessary permissions
+            cursor.execute("""
+                SELECT * FROM information_schema.role_table_grants 
+                WHERE grantee = %s AND privilege_type = 'INSERT'
+            """, (current_user,))
+            
+            if cursor.rowcount == 0:
+                self.warnings.append(f"Database user {current_user} may not have sufficient permissions")
+                
+            cursor.close()
             conn.close()
         except Exception as e:
             self.errors.append(f"Database connection failed: {str(e)}")
+            # Try to create database if it doesn't exist
+            if "does not exist" in str(e):
+                try:
+                    self.create_database(db_config)
+                except Exception as create_e:
+                    self.errors.append(f"Failed to create database: {str(create_e)}")
+    
+    def create_database(self, db_config):
+        """Create database if it doesn't exist."""
+        try:
+            conn = psycopg2.connect(
+                dbname="postgres",
+                user=db_config.get('DB_USER', 'postgres'),
+                password=db_config.get('DB_PASSWORD', ''),
+                host=db_config.get('DB_HOST', 'localhost'),
+                port=db_config.get('DB_PORT', '5432')
+            )
+            conn.autocommit = True
+            cursor = conn.cursor()
+            db_name = db_config.get('DB_NAME', 'rfm_insights')
+            cursor.execute(f"CREATE DATABASE {db_name}")
+            cursor.close()
+            conn.close()
+            logger.info(f"Created database {db_name}")
+        except Exception as e:
+            raise Exception(f"Failed to create database: {str(e)}")
+    
+    def verify_database_schema(self):
+        """Verify database schema is properly set up."""
+        try:
+            env_path = self.project_root / ".env"
+            if not env_path.exists():
+                self.errors.append("Cannot verify database schema: .env file missing")
+                return
+
+            # Read database configuration from .env
+            db_config = {}
+            with open(env_path) as f:
+                for line in f:
+                    if line.startswith('DB_'):
+                        key, value = line.strip().split('=', 1)
+                        db_config[key] = value
+            
+            conn = psycopg2.connect(
+                dbname=db_config.get('DB_NAME', 'rfm_insights'),
+                user=db_config.get('DB_USER', 'postgres'),
+                password=db_config.get('DB_PASSWORD', ''),
+                host=db_config.get('DB_HOST', 'localhost'),
+                port=db_config.get('DB_PORT', '5432')
+            )
+            cursor = conn.cursor()
+            
+            # Check if alembic_version table exists
+            cursor.execute("""
+                SELECT EXISTS (
+                   SELECT FROM information_schema.tables 
+                   WHERE table_name = 'alembic_version'
+                )
+            """)
+            alembic_exists = cursor.fetchone()[0]
+            
+            if not alembic_exists:
+                self.errors.append("Database schema hasn't been initialized with Alembic migrations")
+                cursor.close()
+                conn.close()
+                return
+            
+            # Check essential tables
+            essential_tables = ['users', 'analysis_results', 'rfm_segments']
+            for table in essential_tables:
+                cursor.execute(f"""
+                    SELECT EXISTS (
+                       SELECT FROM information_schema.tables 
+                       WHERE table_name = '{table}'
+                    )
+                """)
+                table_exists = cursor.fetchone()[0]
+                if not table_exists:
+                    self.errors.append(f"Essential table '{table}' doesn't exist in the database")
+            
+            cursor.close()
+            conn.close()
+        except Exception as e:
+            self.errors.append(f"Failed to verify database schema: {str(e)}")
+    
+    def verify_user_creation(self):
+        """Verify that an admin user can be created in the database."""
+        try:
+            # First check if the users table exists
+            env_path = self.project_root / ".env"
+            if not env_path.exists():
+                self.errors.append("Cannot verify user creation: .env file missing")
+                return
+
+            # Read database configuration from .env
+            db_config = {}
+            with open(env_path) as f:
+                for line in f:
+                    if line.startswith('DB_'):
+                        key, value = line.strip().split('=', 1)
+                        db_config[key] = value
+            
+            conn = psycopg2.connect(
+                dbname=db_config.get('DB_NAME', 'rfm_insights'),
+                user=db_config.get('DB_USER', 'postgres'),
+                password=db_config.get('DB_PASSWORD', ''),
+                host=db_config.get('DB_HOST', 'localhost'),
+                port=db_config.get('DB_PORT', '5432')
+            )
+            cursor = conn.cursor()
+            
+            # Check if users table exists
+            cursor.execute("""
+                SELECT EXISTS (
+                   SELECT FROM information_schema.tables 
+                   WHERE table_name = 'users'
+                )
+            """)
+            users_table_exists = cursor.fetchone()[0]
+            
+            if not users_table_exists:
+                self.warnings.append("Users table doesn't exist. Run migrations first.")
+                cursor.close()
+                conn.close()
+                return
+            
+            # Check if admin user exists
+            cursor.execute("SELECT * FROM users WHERE email = 'admin@rfminsights.com'")
+            admin_exists = cursor.rowcount > 0
+            
+            if not admin_exists:
+                self.warnings.append("Admin user doesn't exist. It will be created during deployment.")
+            
+            cursor.close()
+            conn.close()
+            
+            # Test user login via API if it's running
+            try:
+                login_url = "http://localhost:8000/auth/token"
+                response = requests.post(
+                    login_url,
+                    data={
+                        "username": "admin@rfminsights.com",
+                        "password": "admin"  # Default password from .env
+                    },
+                    timeout=5
+                )
+                
+                if response.status_code != 200:
+                    self.warnings.append("Admin user login not working. Check API and credentials.")
+            except requests.RequestException:
+                self.warnings.append("Couldn't test user login via API. API may not be running.")
+            
+        except Exception as e:
+            self.errors.append(f"Failed to verify user creation: {str(e)}")
 
     def verify_openai_key(self):
         """Verify OpenAI API key is valid."""
@@ -189,10 +386,23 @@ class DeploymentVerifier:
         try:
             response = requests.get(
                 "https://api.openai.com/v1/models",
-                headers=headers
+                headers=headers,
+                timeout=10
             )
             if response.status_code != 200:
                 self.errors.append("Invalid OpenAI API key")
+            
+            # Check if GPT-4 or GPT-3.5 is available
+            if response.status_code == 200:
+                models = response.json().get("data", [])
+                model_ids = [model.get("id") for model in models]
+                
+                required_models = ["gpt-4", "gpt-4-turbo", "gpt-3.5-turbo"]
+                available_models = [model for model in required_models if any(model in model_id for model_id in model_ids)]
+                
+                if not available_models:
+                    self.warnings.append("Required OpenAI models (GPT-4 or GPT-3.5) not available for this API key")
+                    
         except Exception as e:
             self.errors.append(f"Failed to verify OpenAI API key: {str(e)}")
 
@@ -209,6 +419,7 @@ class DeploymentVerifier:
             if not dir_path.exists():
                 try:
                     dir_path.mkdir(parents=True)
+                    logger.info(f"Created directory: {directory}")
                 except Exception as e:
                     self.errors.append(f"Cannot create directory {directory}: {str(e)}")
             
@@ -236,8 +447,60 @@ class DeploymentVerifier:
             if result.returncode != 0:
                 self.errors.append("Dependency conflicts found:")
                 self.errors.extend(result.stdout.splitlines())
+                
+            # Check for specific required packages
+            essential_packages = ["fastapi", "sqlalchemy", "alembic", "psycopg2", "python-jose", "openai"]
+            for package in essential_packages:
+                try:
+                    __import__(package)
+                except ImportError:
+                    self.errors.append(f"Essential package '{package}' is not installed")
         except Exception as e:
             self.errors.append(f"Failed to verify dependencies: {str(e)}")
+    
+    def verify_network_connectivity(self):
+        """Verify network connectivity to external services."""
+        external_services = [
+            ("api.openai.com", 443),
+            ("github.com", 443),
+            ("pypi.org", 443)
+        ]
+        
+        for host, port in external_services:
+            try:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.settimeout(5)
+                sock.connect((host, port))
+                sock.close()
+            except socket.error:
+                self.warnings.append(f"Cannot connect to {host}:{port}. Check your network/firewall settings.")
+    
+    def verify_file_upload(self):
+        """Verify file upload functionality."""
+        uploads_dir = self.project_root / "uploads"
+        if not uploads_dir.exists():
+            try:
+                uploads_dir.mkdir(parents=True)
+            except Exception as e:
+                self.errors.append(f"Cannot create uploads directory: {str(e)}")
+                return
+        
+        # Check if we can write a test file
+        test_file = uploads_dir / "test_upload.csv"
+        try:
+            with open(test_file, 'w') as f:
+                f.write("test,data\n1,2\n")
+            
+            # Check if we can read it back
+            with open(test_file, 'r') as f:
+                content = f.read()
+                if "test,data" not in content:
+                    self.errors.append("File upload test failed: could not read test file")
+            
+            # Clean up
+            test_file.unlink()
+        except Exception as e:
+            self.errors.append(f"File upload test failed: {str(e)}")
 
     def display_results(self):
         """Display verification results."""
@@ -255,8 +518,36 @@ class DeploymentVerifier:
         
         if not self.errors and not self.warnings:
             print("✅ All checks passed successfully!")
-
+        
+        # Display summary with progress percentage
+        total_checks = len(self.verify_all.__defaults__[0])
+        passed_checks = total_checks - len(self.errors)
+        progress_percent = (passed_checks / total_checks) * 100
+        
+        print(f"\nVerification progress: {passed_checks}/{total_checks} checks passed ({progress_percent:.1f}%)")
         print("\nVerification complete!")
+
+        # Print next steps based on results
+        if self.errors:
+            print("\nNext steps to fix errors:")
+            if any("Docker" in error for error in self.errors):
+                print("1. Install Docker and Docker Compose")
+                print("   Windows: https://docs.docker.com/desktop/install/windows-install/")
+                print("   Linux: https://docs.docker.com/engine/install/")
+            
+            if any("database" in error.lower() for error in self.errors):
+                print("1. Ensure PostgreSQL is installed and running")
+                print("2. Create the database: createdb -U postgres rfm_insights")
+                print("3. Check database credentials in .env file")
+            
+            if any("OpenAI" in error for error in self.errors):
+                print("1. Get a valid OpenAI API key from https://platform.openai.com/")
+                print("2. Add it to your .env file as OPENAI_API_KEY=your-key-here")
+                
+            if any("permission" in error.lower() for error in self.errors):
+                print("1. Ensure you have write permissions to project directories")
+                print("2. On Windows, run as Administrator")
+                print("3. On Linux, check directory ownership: sudo chown -R $USER:$USER ./")
 
 if __name__ == "__main__":
     verifier = DeploymentVerifier()
