@@ -10,8 +10,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 # Configure logging
-from config.logging_config import setup_logging
-logger = setup_logging(debug_mode=os.getenv('DEBUG', 'False').lower() == 'true')
+#from config.logging_config import setup_logging
+#logger = setup_logging(debug_mode=os.getenv('DEBUG', 'False').lower() == 'true')
 
 # Add current directory to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
