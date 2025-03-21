@@ -14,7 +14,8 @@ import uvicorn
 #logger = setup_logging(debug_mode=os.getenv('DEBUG', 'False').lower() == 'true')
 
 # Add current directory to path
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+#sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))  
 
 # Import routers and middleware
 from src.routes.rfm_api import router as rfm_router
