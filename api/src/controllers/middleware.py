@@ -149,13 +149,15 @@ class RateLimiter:
             
             # Process the request
             return await self.app(scope, receive, send)
+        except:
+            print("An exception occurred")
         # Get client IP
         client_ip = self._get_client_ip(request)
         path = request.url.path
         
         # Only apply rate limiting to authentication endpoints
         if not self._is_auth_endpoint(path):
-            return await call_next(request)
+            return await call_next(request) # type: ignore
         
         # Check if IP is blocked
         if client_ip in self.blocked_ips:
@@ -192,7 +194,7 @@ class RateLimiter:
         self.requests[client_ip].append(time.time())
         
         # Process the request
-        return await call_next(request)
+        return await call_next(request) # type: ignore
     
     def _get_client_ip(self, request: Request) -> str:
         """
