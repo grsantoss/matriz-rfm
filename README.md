@@ -865,4 +865,37 @@ The application uses OpenAI's API which has associated costs:
 - GPT-4: Higher quality, more expensive
 - GPT-3.5: Lower cost, still good quality
 - Costs are based on token usage
-- Monitor usage through OpenAI dashboard 
+- Monitor usage through OpenAI dashboard
+
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Install system dependencies required for scientific Python packages and psycopg2
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    gcc \
+    g++ \
+    libpq-dev \
+    libffi-dev \
+    libssl-dev \
+    python3-dev \
+    libatlas-base-dev \
+    libopenblas-dev \
+    liblapack-dev \
+    cython \
+    file \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy and install Python dependencies
+COPY requirements.txt .
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Copy the rest of the application
+COPY . .
+
+EXPOSE 8000
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"] 
