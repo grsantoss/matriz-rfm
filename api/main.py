@@ -3,9 +3,8 @@
 
 import os
 import sys
-import logging
 from dotenv import load_dotenv
-from fastapi import FastAPI, Depends, HTTPException, Request
+from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
@@ -18,12 +17,13 @@ logger = setup_logging(debug_mode=os.getenv('DEBUG', 'False').lower() == 'true')
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Import routers and middleware
-from backend.rfm_api import router as rfm_router
-from backend.auth_routes import router as auth_router
-from backend.marketplace import router as marketplace_router
-from backend.middleware import RateLimiter, RequestValidator
-from backend.monitoring import MonitoringMiddleware
-from backend.api_utils import get_api_prefix
+
+from ..api.src.routes.rfm_api import router as rfm_router
+from ..api.src.routes.auth_routes import router as auth_router
+from ..api.src.routes.marketplace import router as marketplace_router
+from ..api.src.controllers.middleware import RateLimiter, RequestValidator
+from ..api.src.controllers.monitoring import MonitoringMiddleware
+from ..api.src.models.api_utils import get_api_prefix
 
 # Create FastAPI application
 app = FastAPI(
