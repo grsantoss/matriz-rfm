@@ -1,20 +1,19 @@
 # RFM Insights - API Module
 
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, status
-from fastapi.responses import JSONResponse
 import pandas as pd
 import io
 import json
 import datetime
 import os
-from typing import Optional, List, Dict, Any
+from typing import List, Dict, Any
 
 # Import response utilities
-from .api_utils import success_response, error_response, paginated_response
-from .schemas import ResponseSuccess, ResponseError, PaginatedResponseSuccess
+from ..models.api_utils import success_response
+from ..models.schemas import ResponseSuccess
 
 # Import RFM Analysis module
-from .rfm_analysis import analyze_rfm_data
+from ..controllers.rfm_analysis import analyze_rfm_data
 
 # Create router
 router = APIRouter()

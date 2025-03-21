@@ -7,7 +7,7 @@ import logging
 
 # Use absolute import for better compatibility
 from config import config
-from backend.db_connection import get_database_url
+from .db_connection import get_database_url
 
 logger = logging.getLogger('app.database')
 

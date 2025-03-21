@@ -7,7 +7,6 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
 import os
 import openai
-import json
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib.styles import getSampleStyleSheet
@@ -15,13 +14,13 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 from reportlab.lib.units import inch
 
 # Import response utilities
-from backend.api_utils import success_response, error_response, paginated_response
-from backend.schemas import ResponseSuccess, ResponseError, PaginatedResponseSuccess
+from ..models.api_utils import success_response, error_response, paginated_response
+from ..models.schemas import ResponseSuccess, ResponseError, PaginatedResponseSuccess
 
 from backend import models
 from config import config
-from backend.auth import get_current_user
-from backend.database import get_db
+from ..controllers.auth import get_current_user
+from ..models.database import get_db
 
 router = APIRouter()
 

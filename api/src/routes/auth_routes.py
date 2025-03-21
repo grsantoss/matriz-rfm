@@ -7,12 +7,12 @@ from datetime import timedelta
 from typing import Optional, Dict, Any
 
 # Import response utilities
-from .api_utils import success_response, error_response
-from .schemas import ResponseSuccess, ResponseError, UserResponse, TokenResponse
+from ..models.api_utils import success_response, error_response
+from ..models.schemas import ResponseSuccess, ResponseError, UserResponse, TokenResponse
 
 from backend import models
-from .database import get_db
-from .auth import (
+from ..models.database import get_db
+from ..controllers.auth import (
     authenticate_user,
     create_access_token,
     get_password_hash,

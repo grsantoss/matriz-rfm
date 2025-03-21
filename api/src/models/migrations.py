@@ -44,7 +44,7 @@ def drop_db():
 
 def seed_db():
     """Seed the database with initial data"""
-    from .auth import get_password_hash
+    from ..controllers.auth import get_password_hash
     from .models import User
     
     print("Seeding database with initial data...")
