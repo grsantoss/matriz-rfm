@@ -1,0 +1,45 @@
+# Traefik Global Configuration
+api:
+  dashboard: true
+
+# Docker Provider Configuration
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    network: rfm_network
+  file:
+    directory: "/etc/traefik/dynamic"
+    watch: true
+
+# Entrypoints Configuration
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
+  websecure:
+    address: ":443"
+
+# Certificate Resolvers Configuration
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: "admin@rfminsights.com.br"
+      storage: "/acme.json"
+      httpChallenge:
+        entryPoint: web
+
+# Log Configuration
+log:
+  level: INFO
+
+# Access Logs Configuration
+accessLog:
+  filePath: "/var/log/traefik/access.log"
+  format: json
+  bufferingSize: 100
