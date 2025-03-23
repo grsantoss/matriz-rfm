@@ -63,6 +63,7 @@ services:
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - AWS_REGION=${AWS_REGION:-us-east-1}
       - PORT=8000
+      - CORS_ORIGINS=https://app.rfminsights.com.br
     volumes:
       - ./logs:/app/logs
       - ./analysis_history:/app/analysis_history
@@ -79,7 +80,7 @@ services:
       - "traefik.http.services.api.loadbalancer.server.port=8000"
       - "traefik.http.routers.api.middlewares=cors-headers"
       - "traefik.http.middlewares.cors-headers.headers.accesscontrolallowmethods=GET,POST,PUT,DELETE,OPTIONS"
-      - "traefik.http.middlewares.cors-headers.headers.accesscontrolalloworigin=*"
+      - "traefik.http.middlewares.cors-headers.headers.accesscontrolalloworigin=https://app.rfminsights.com.br"
       - "traefik.http.middlewares.cors-headers.headers.accesscontrolmaxage=100"
       - "traefik.http.middlewares.cors-headers.headers.addvaryheader=true"
 
@@ -89,8 +90,8 @@ services:
     container_name: rfminsights-web
     restart: always
     volumes:
-      - ./frontend:/usr/share/nginx/html
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./app:/usr/share/nginx/html:ro
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     expose:
       - "80"
     networks:

@@ -5,30 +5,63 @@
  */
 
 // API Client
-class ApiClient {
-    constructor() {
-        this.baseUrl = window.appConfig.apiUrl;
-        this.version = window.appConfig.apiVersion;
-        this.timeout = window.appConfig.apiTimeout;
-    }
+const apiClient = {
+    baseUrl: window.appConfig.API_URL,
+    version: window.appConfig.API_VERSION,
+    timeout: window.appConfig.API_TIMEOUT,
+    token: null,
 
-    async request(endpoint, options = {}) {
-        const url = `${this.baseUrl}/${this.version}${endpoint}`;
+    // Set authentication token
+    setToken(token) {
+        this.token = token;
+        localStorage.setItem('auth_token', token);
+    },
+
+    // Get authentication token
+    getToken() {
+        return this.token || localStorage.getItem('auth_token');
+    },
+
+    // Clear authentication token
+    clearToken() {
+        this.token = null;
+        localStorage.removeItem('auth_token');
+    },
+
+    // Prepare headers for API requests
+    getHeaders() {
         const headers = {
             'Content-Type': 'application/json',
-            ...options.headers
+            'Accept': 'application/json'
         };
 
-        // Add authentication token if available
-        const token = localStorage.getItem('auth_token');
+        const token = this.getToken();
         if (token) {
             headers['Authorization'] = `Bearer ${token}`;
         }
 
-        try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+        return headers;
+    },
 
+    // Handle API response
+    async handleResponse(response) {
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Erro na requisição');
+        }
+        return response.json();
+    },
+
+    // Make API request
+    async request(endpoint, options = {}) {
+        const url = `${this.baseUrl}/api/${this.version}${endpoint}`;
+        const headers = this.getHeaders();
+        const timeout = this.timeout;
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+        try {
             const response = await fetch(url, {
                 ...options,
                 headers,
@@ -36,220 +69,69 @@ class ApiClient {
             });
 
             clearTimeout(timeoutId);
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            return await response.json();
+            return this.handleResponse(response);
         } catch (error) {
+            clearTimeout(timeoutId);
             if (error.name === 'AbortError') {
-                throw new Error('Request timeout');
+                throw new Error('A requisição excedeu o tempo limite');
             }
             throw error;
         }
-    }
+    },
 
-    /**
-     * Set the authentication token
-     * @param {string} token - JWT token
-     */
-    setToken(token) {
-        localStorage.setItem('auth_token', token);
-    }
-
-    /**
-     * Clear the authentication token
-     */
-    clearToken() {
-        localStorage.removeItem('auth_token');
-    }
-
-    /**
-     * Get the authentication headers
-     * @returns {Object} Headers object
-     */
-    getHeaders() {
-        const headers = {
-            'Content-Type': 'application/json'
-        };
-
-        const token = localStorage.getItem('auth_token');
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-        }
-
-        return headers;
-    }
-
-    /**
-     * Handle API response
-     * @param {Response} response - Fetch API response
-     * @returns {Promise} Promise with response data
-     */
-    async handleResponse(response) {
-        const data = await response.json();
-
-        if (!response.ok) {
-            // Handle authentication errors
-            if (response.status === 401) {
-                this.clearToken();
-                window.location.href = '/login.html';
-            }
-
-            // Throw error with message from API
-            throw new Error(data.detail || 'Erro na requisição');
-        }
-
-        return data;
-    }
-
-    /**
-     * Make a GET request
-     * @param {string} endpoint - API endpoint
-     * @returns {Promise} Promise with response data
-     */
-    async get(endpoint) {
-        try {
-            const response = await fetch(`${this.baseUrl}/${this.version}${endpoint}`, {
-                method: 'GET',
-                headers: this.getHeaders()
-            });
-
-            return await this.handleResponse(response);
-        } catch (error) {
-            console.error(`Error in GET ${endpoint}:`, error);
-            throw error;
-        }
-    }
-
-    /**
-     * Make a POST request
-     * @param {string} endpoint - API endpoint
-     * @param {Object} data - Request data
-     * @returns {Promise} Promise with response data
-     */
-    async post(endpoint, data) {
-        try {
-            const response = await fetch(`${this.baseUrl}/${this.version}${endpoint}`, {
-                method: 'POST',
-                headers: this.getHeaders(),
-                body: JSON.stringify(data)
-            });
-
-            return await this.handleResponse(response);
-        } catch (error) {
-            console.error(`Error in POST ${endpoint}:`, error);
-            throw error;
-        }
-    }
-
-    /**
-     * Make a PUT request
-     * @param {string} endpoint - API endpoint
-     * @param {Object} data - Request data
-     * @returns {Promise} Promise with response data
-     */
-    async put(endpoint, data) {
-        try {
-            const response = await fetch(`${this.baseUrl}/${this.version}${endpoint}`, {
-                method: 'PUT',
-                headers: this.getHeaders(),
-                body: JSON.stringify(data)
-            });
-
-            return await this.handleResponse(response);
-        } catch (error) {
-            console.error(`Error in PUT ${endpoint}:`, error);
-            throw error;
-        }
-    }
-
-    /**
-     * Make a DELETE request
-     * @param {string} endpoint - API endpoint
-     * @returns {Promise} Promise with response data
-     */
-    async delete(endpoint) {
-        try {
-            const response = await fetch(`${this.baseUrl}/${this.version}${endpoint}`, {
-                method: 'DELETE',
-                headers: this.getHeaders()
-            });
-
-            return await this.handleResponse(response);
-        } catch (error) {
-            console.error(`Error in DELETE ${endpoint}:`, error);
-            throw error;
-        }
-    }
-
-    /**
-     * Upload a file
-     * @param {string} endpoint - API endpoint
-     * @param {FormData} formData - Form data with file
-     * @returns {Promise} Promise with response data
-     */
-    async uploadFile(endpoint, formData) {
-        try {
-            const headers = {};
-            const token = localStorage.getItem('auth_token');
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-            }
-
-            const response = await fetch(`${this.baseUrl}/${this.version}${endpoint}`, {
-                method: 'POST',
-                headers: headers,
-                body: formData
-            });
-
-            return await this.handleResponse(response);
-        } catch (error) {
-            console.error(`Error in file upload ${endpoint}:`, error);
-            throw error;
-        }
-    }
-
-    // Authentication endpoints
-    async login(credentials) {
+    // Authentication Methods
+    async login(email, password) {
         return this.request('/auth/login', {
             method: 'POST',
-            body: JSON.stringify(credentials)
+            body: JSON.stringify({ email, password })
         });
-    }
+    },
 
     async register(userData) {
         return this.request('/auth/register', {
             method: 'POST',
             body: JSON.stringify(userData)
         });
-    }
+    },
 
-    async getUserProfile() {
-        return this.request('/auth/me');
-    }
-
-    async updateUserProfile(userData) {
-        return this.put('/auth/me', userData);
-    }
-
-    async requestPasswordReset(email) {
-        return this.request('/auth/password-reset', {
+    async forgotPassword(email) {
+        return this.request('/auth/forgot-password', {
             method: 'POST',
             body: JSON.stringify({ email })
         });
-    }
+    },
 
-    async resetPassword(token, newPassword) {
-        return this.request('/auth/password-reset/confirm', {
+    async resetPassword(token, password) {
+        return this.request('/auth/reset-password', {
             method: 'POST',
-            body: JSON.stringify({
-                token,
-                new_password: newPassword
-            })
+            body: JSON.stringify({ token, password })
         });
-    }
+    },
+
+    // User Methods
+    async getCurrentUser() {
+        return this.request('/user/me');
+    },
+
+    async updateProfile(userData) {
+        return this.request('/user/profile', {
+            method: 'PUT',
+            body: JSON.stringify(userData)
+        });
+    },
+
+    async changePassword(currentPassword, newPassword) {
+        return this.request('/user/change-password', {
+            method: 'POST',
+            body: JSON.stringify({ currentPassword, newPassword })
+        });
+    },
+
+    // Logout
+    logout() {
+        this.clearToken();
+        window.location.href = 'login.html';
+    },
 
     // RFM Analysis endpoints
     async analyzeRFM(formData) {
@@ -257,34 +139,42 @@ class ApiClient {
             method: 'POST',
             body: JSON.stringify(formData)
         });
-    }
+    },
 
     async getAnalysisHistory(limit = 5) {
-        return this.get(`/rfm/analysis-history?limit=${limit}`);
-    }
+        return this.request(`/rfm/analysis-history?limit=${limit}`);
+    },
 
     async getSegmentDescriptions() {
-        return this.get('/rfm/segment-descriptions');
-    }
+        return this.request('/rfm/segment-descriptions');
+    },
 
     // Marketplace endpoints
     async generateMessage(messageData) {
-        return this.post('/marketplace/generate-message', messageData);
-    }
+        return this.request('/marketplace/generate-message', {
+            method: 'POST',
+            body: JSON.stringify(messageData)
+        });
+    },
 
     async regenerateMessage(messageId) {
-        return this.post('/marketplace/regenerate-message', { messageId });
-    }
+        return this.request('/marketplace/regenerate-message', {
+            method: 'POST',
+            body: JSON.stringify({ messageId })
+        });
+    },
 
     async getUserMessages(limit = 10, offset = 0) {
-        return this.get(`/marketplace/messages?limit=${limit}&offset=${offset}`);
-    }
+        return this.request(`/marketplace/messages?limit=${limit}&offset=${offset}`);
+    },
 
     async generateInsight(insightData) {
-        return this.post('/marketplace/generate-insight', insightData);
+        return this.request('/marketplace/generate-insight', {
+            method: 'POST',
+            body: JSON.stringify(insightData)
+        });
     }
-}
+};
 
 // Create and export API client instance
-const apiClient = new ApiClient();
 window.apiClient = apiClient;

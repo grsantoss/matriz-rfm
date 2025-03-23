@@ -28,6 +28,7 @@ print_warning() {
 # Function to print error messages
 print_error() {
     echo -e "${RED}❌ $1${NC}"
+    exit 1
 }
 
 # Function to check if dependencies are installed
@@ -37,7 +38,6 @@ check_dependencies() {
     # Check if docker is installed
     if ! command -v docker &> /dev/null; then
         print_error "Docker is not installed. Please install Docker first."
-        exit 1
     else
         print_success "Docker is installed."
     fi
@@ -46,7 +46,6 @@ check_dependencies() {
     if ! command -v docker compose &> /dev/null; then
         if ! command -v docker-compose &> /dev/null; then
             print_error "Docker Compose is not installed. Please install Docker Compose first."
-            exit 1
         else
             print_warning "Using deprecated docker-compose. Consider upgrading to Docker Compose V2."
             # Create alias for backward compatibility
@@ -59,7 +58,6 @@ check_dependencies() {
     # Check if Docker is running
     if ! docker info &> /dev/null; then
         print_error "Docker daemon is not running. Please start Docker service."
-        exit 1
     else
         print_success "Docker daemon is running."
     fi
@@ -69,39 +67,122 @@ check_dependencies() {
 setup_environment() {
     print_header "Setting Up Environment"
     
-    # Create traefik directory if it doesn't exist
-    if [ ! -d "./traefik" ]; then
-        mkdir -p ./traefik
-        print_success "Created traefik directory."
-    fi
-    
-    # Create other required directories
-    mkdir -p logs analysis_history pdfs frontend nginx
-    print_success "Created application directories."
+    # Create required directories
+    local dirs=("traefik" "logs" "analysis_history" "pdfs" "app/assets/js" "app/assets/css")
+    for dir in "${dirs[@]}"; do
+        if [ ! -d "$dir" ]; then
+            mkdir -p "$dir"
+            print_success "Created directory: $dir"
+        fi
+    done
     
     # Create traefik.yml if it doesn't exist
     if [ ! -f "./traefik/traefik.yml" ]; then
-        print_warning "traefik.yml file not found. This should have been created already."
+        cat > ./traefik/traefik.yml << 'EOL'
+# Traefik Global Configuration
+api:
+  dashboard: true
+
+# Docker Provider Configuration
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    network: rfm_network
+  file:
+    directory: "/etc/traefik/dynamic"
+    watch: true
+
+# Entrypoints Configuration
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
+  websecure:
+    address: ":443"
+
+# Certificate Resolvers Configuration
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: "admin@rfminsights.com.br"
+      storage: "/acme.json"
+      httpChallenge:
+        entryPoint: web
+
+# Log Configuration
+log:
+  level: INFO
+
+# Access Logs Configuration
+accessLog:
+  filePath: "/var/log/traefik/access.log"
+  format: json
+  bufferingSize: 100
+EOL
+        print_success "Created traefik.yml"
     fi
     
     # Create and set permissions for acme.json
     if [ ! -f "./traefik/acme.json" ]; then
         touch ./traefik/acme.json
         chmod 600 ./traefik/acme.json
-        print_success "Created acme.json with proper permissions."
-    else
-        # Ensure acme.json has the correct permissions
-        chmod 600 ./traefik/acme.json
-        print_success "Updated acme.json permissions."
+        print_success "Created acme.json with proper permissions"
     fi
     
-    # Check if nginx.conf exists
-    if [ ! -d "./nginx" ]; then
-        mkdir -p ./nginx
-    fi
-    
+    # Create nginx.conf if it doesn't exist
     if [ ! -f "./nginx/nginx.conf" ]; then
-        print_warning "nginx.conf file not found. This should have been created already."
+        cat > ./nginx/nginx.conf << 'EOL'
+server {
+    listen 80;
+    server_name localhost;
+    server_tokens off;
+
+    # Security headers
+    add_header X-Frame-Options "DENY" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Content-Security-Policy "default-src 'self' https: data: 'unsafe-inline' 'unsafe-eval';" always;
+
+    # Route all requests to frontend files
+    location / {
+        root /usr/share/nginx/html;
+        index index.html;
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Cache settings for static content
+    location ~* \.(jpg|jpeg|png|gif|ico|css|js|woff|woff2|ttf|eot)$ {
+        root /usr/share/nginx/html;
+        expires 30d;
+        add_header Cache-Control "public, no-transform";
+        access_log off;
+    }
+
+    # Health check endpoint
+    location /health {
+        access_log off;
+        return 200 'healthy\n';
+    }
+
+    # Deny access to .htaccess files
+    location ~ /\.ht {
+        deny all;
+    }
+
+    # Deny access to hidden files
+    location ~ /\. {
+        deny all;
+    }
+}
+EOL
+        print_success "Created nginx.conf"
     fi
     
     # Check if .env file exists, create it from template if not
@@ -111,27 +192,9 @@ setup_environment() {
         print_warning "Press Enter to continue after updating .env, or Ctrl+C to abort..."
         read
     elif [ ! -f ".env" ]; then
-        print_warning "No .env file or template found. Creating a basic .env file."
-        cat > .env <<EOL
-# Database Configuration
-POSTGRES_USER=rfminsights
-POSTGRES_PASSWORD=changeme
-POSTGRES_DB=rfminsights
-
-# API Configuration
-JWT_SECRET_KEY=change_this_to_a_secure_random_string
-OPENAI_API_KEY=your_openai_api_key
-
-# AWS Configuration (if needed)
-AWS_ACCESS_KEY_ID=
-AWS_SECRET_ACCESS_KEY=
-AWS_REGION=us-east-1
-EOL
-        print_warning "Created basic .env file. Please update it with your configuration."
-        print_warning "Press Enter to continue after updating .env, or Ctrl+C to abort..."
-        read
+        print_error "No .env file or template found. Please create one with required configuration."
     else
-        print_success "Found existing .env file."
+        print_success "Found existing .env file"
     fi
 }
 
@@ -182,21 +245,21 @@ start_services() {
     
     # Pull the latest images
     docker compose pull
-    print_success "Pulled the latest Docker images."
+    print_success "Pulled the latest Docker images"
     
     # Start all services
     docker compose up -d
-    print_success "Started all services."
+    print_success "Started all services"
     
     # Wait for services to be ready
     echo "Waiting for services to initialize..."
     sleep 10
     
     # Check if containers are running
-    if [ "$(docker compose ps -q | wc -l)" -lt 3 ]; then
-        print_error "Not all containers are running. Check logs with 'docker compose logs'."
+    if [ "$(docker compose ps -q | wc -l)" -lt 4 ]; then
+        print_error "Not all containers are running. Check logs with 'docker compose logs'"
     else
-        print_success "All containers are running."
+        print_success "All containers are running"
     fi
 }
 
@@ -210,26 +273,23 @@ verify_deployment() {
     
     # Check if Traefik is running
     if ! docker compose ps traefik | grep -q "Up"; then
-        print_error "Traefik is not running. Check logs with 'docker compose logs traefik'."
-        return 1
+        print_error "Traefik is not running. Check logs with 'docker compose logs traefik'"
     else
-        print_success "Traefik is running."
+        print_success "Traefik is running"
     fi
     
     # Check if web service is running
     if ! docker compose ps web | grep -q "Up"; then
-        print_error "Web service is not running. Check logs with 'docker compose logs web'."
-        return 1
+        print_error "Web service is not running. Check logs with 'docker compose logs web'"
     else
-        print_success "Web service is running."
+        print_success "Web service is running"
     fi
     
     # Check if API service is running
     if ! docker compose ps api | grep -q "Up"; then
-        print_error "API service is not running. Check logs with 'docker compose logs api'."
-        return 1
+        print_error "API service is not running. Check logs with 'docker compose logs api'"
     else
-        print_success "API service is running."
+        print_success "API service is running"
     fi
     
     # Check if HTTPS is working for app domain
@@ -249,57 +309,33 @@ verify_deployment() {
         print_warning "Could not connect to https://api.rfminsights.com.br"
         print_warning "SSL certificate might not be ready yet, or there might be network issues."
     fi
-    
-    # Check acme.json for certificates
-    if grep -q "Certificate" ./traefik/acme.json; then
-        print_success "SSL certificates have been issued."
-    else
-        print_warning "SSL certificates might not be issued yet. Check 'docker compose logs traefik' for details."
-    fi
-    
-    return 0
-}
-
-# Function to display deployment summary
-deployment_summary() {
-    print_header "Deployment Summary"
-    
-    echo -e "${BLUE}RFM Insights application is now deployed with Traefik!${NC}"
-    echo ""
-    echo -e "${GREEN}Frontend:${NC} https://app.rfminsights.com.br"
-    echo -e "${GREEN}API:${NC} https://api.rfminsights.com.br"
-    echo -e "${GREEN}Traefik Dashboard:${NC} https://traefik.rfminsights.com.br (protected with Basic Auth)"
-    echo ""
-    echo -e "${BLUE}Useful commands:${NC}"
-    echo "  - View logs: docker compose logs"
-    echo "  - Service-specific logs: docker compose logs [service]"
-    echo "  - Restart all services: docker compose restart"
-    echo "  - Stop all services: docker compose down"
-    echo "  - Update and redeploy: ./deploy.sh"
-    echo ""
-    echo -e "${YELLOW}Note:${NC} If you encounter any issues, check the logs and ensure your DNS is correctly configured."
 }
 
 # Main deployment process
 main() {
-    print_header "RFM Insights Deployment"
+    print_header "Starting RFM Insights Deployment"
     
-    # Execute deployment steps
+    # Check dependencies
     check_dependencies
+    
+    # Setup environment
     setup_environment
+    
+    # Check DNS configuration
     check_dns
+    
+    # Start services
     start_services
     
     # Verify deployment
-    if verify_deployment; then
-        deployment_summary
-        print_success "Deployment completed successfully!"
-        exit 0
-    else
-        print_error "Deployment failed. Please check the logs for errors."
-        exit 1
-    fi
+    verify_deployment
+    
+    print_header "Deployment Complete"
+    print_success "RFM Insights has been deployed successfully!"
+    print_success "Frontend: https://app.rfminsights.com.br"
+    print_success "API: https://api.rfminsights.com.br"
+    print_success "Traefik Dashboard: https://traefik.rfminsights.com.br"
 }
 
-# Execute main function
+# Run main function
 main 

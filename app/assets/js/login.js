@@ -1,71 +1,139 @@
-// Login Form Handling
-const loginForm = document.querySelector('form');
-const emailInput = document.getElementById('email');
-const passwordInput = document.getElementById('password');
-// Google login button is not present in the HTML
-// const googleLoginBtn = document.querySelector('.btn-outline-dark');
+// DOM Elements
+const loginForm = document.getElementById('loginForm');
+const registerForm = document.getElementById('registerForm');
+const showRegisterFormBtn = document.getElementById('showRegisterForm');
+const showLoginFormBtn = document.getElementById('showLoginForm');
+const forgotPasswordLink = document.getElementById('forgotPasswordLink');
 
-// API Endpoints are now handled by the centralized API client
+// Form Validation
+function validateForm(form) {
+    if (!form.checkValidity()) {
+        event.preventDefault();
+        event.stopPropagation();
+        form.classList.add('was-validated');
+        return false;
+    }
+    return true;
+}
 
-// Email/Password Login
-loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
+// Show Notification
+function showNotification(type, title, message) {
+    const template = document.getElementById('notification-template');
+    const notification = template.content.cloneNode(true).querySelector('.notification');
+    
+    notification.classList.add(type);
+    
+    const icon = notification.querySelector('.notification-icon i');
+    switch (type) {
+        case 'success':
+            icon.classList.add('bi-check-circle-fill');
+            break;
+        case 'error':
+            icon.classList.add('bi-x-circle-fill');
+            break;
+        case 'warning':
+            icon.classList.add('bi-exclamation-triangle-fill');
+            break;
+    }
+    
+    notification.querySelector('.notification-title').textContent = title;
+    notification.querySelector('.notification-message').textContent = message;
+    
+    notification.querySelector('.notification-close').addEventListener('click', () => {
+        notification.remove();
+    });
+    
+    document.body.appendChild(notification);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        notification.remove();
+    }, 5000);
+}
+
+// Form Switch
+showRegisterFormBtn.addEventListener('click', () => {
+    loginForm.classList.add('d-none');
+    registerForm.classList.remove('d-none');
+});
+
+showLoginFormBtn.addEventListener('click', () => {
+    registerForm.classList.add('d-none');
+    loginForm.classList.remove('d-none');
+});
+
+// Login Form Submit
+loginForm.addEventListener('submit', async (event) => {
+    if (!validateForm(loginForm)) return;
+    
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
     
     try {
-        const result = await apiClient.login(emailInput.value, passwordInput.value);
-        
-        // Store token and redirect
-        apiClient.setToken(result.access_token);
-        window.location.href = 'analise.html';
+        const response = await apiClient.login(email, password);
+        if (response.success) {
+            stateManager.setToken(response.token);
+            stateManager.setUser(response.user);
+            window.location.href = 'index.html';
+        } else {
+            showNotification('error', 'Erro de Login', response.message || 'Credenciais inválidas');
+        }
     } catch (error) {
-        console.error('Erro no login:', error);
-        alert('Erro ao tentar fazer login: ' + error.message);
+        showNotification('error', 'Erro', 'Ocorreu um erro ao tentar fazer login. Tente novamente.');
     }
 });
 
-// Google OAuth2 Login functionality is commented out as the button doesn't exist in the HTML
-/*
-googleLoginBtn.addEventListener('click', () => {
-    // Google OAuth2 configuration
-    const clientId = ''; // Will be set from environment variables
-    const redirectUri = `${window.location.origin}/auth/google/callback`;
-    const scope = 'email profile';
-
-    const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`;
+// Register Form Submit
+registerForm.addEventListener('submit', async (event) => {
+    if (!validateForm(registerForm)) return;
     
-    window.location.href = googleAuthUrl;
+    const name = document.getElementById('registerName').value;
+    const email = document.getElementById('registerEmail').value;
+    const password = document.getElementById('registerPassword').value;
+    const passwordConfirm = document.getElementById('registerPasswordConfirm').value;
+    
+    if (password !== passwordConfirm) {
+        showNotification('error', 'Erro de Validação', 'As senhas não coincidem');
+        return;
+    }
+    
+    try {
+        const response = await apiClient.register({ name, email, password });
+        if (response.success) {
+            showNotification('success', 'Sucesso', 'Conta criada com sucesso! Faça login para continuar.');
+            registerForm.classList.add('d-none');
+            loginForm.classList.remove('d-none');
+            loginForm.reset();
+        } else {
+            showNotification('error', 'Erro de Registro', response.message || 'Erro ao criar conta');
+        }
+    } catch (error) {
+        showNotification('error', 'Erro', 'Ocorreu um erro ao tentar criar a conta. Tente novamente.');
+    }
 });
-*/
 
-// Password Reset
-const forgotPasswordLink = document.querySelector('a[href="#"]');
-forgotPasswordLink.addEventListener('click', async (e) => {
-    e.preventDefault();
-    
+// Forgot Password
+forgotPasswordLink.addEventListener('click', async (event) => {
+    event.preventDefault();
     const email = prompt('Digite seu e-mail para recuperar a senha:');
     if (!email) return;
-
+    
     try {
-        await apiClient.requestPasswordReset(email);
-        alert('Um link de recuperação foi enviado para seu e-mail.');
+        const response = await apiClient.forgotPassword(email);
+        if (response.success) {
+            showNotification('success', 'Sucesso', 'Um e-mail com instruções foi enviado para sua conta.');
+        } else {
+            showNotification('error', 'Erro', response.message || 'Erro ao processar a solicitação');
+        }
     } catch (error) {
-        console.error('Erro na recuperação de senha:', error);
-        alert('Erro ao solicitar recuperação de senha: ' + error.message);
+        showNotification('error', 'Erro', 'Ocorreu um erro ao tentar recuperar a senha. Tente novamente.');
     }
 });
 
-// Dynamic Footer Year Update
-// Footer is not present in the login.html page, so this function is commented out
-/*
-const updateFooterYear = () => {
-    const footerYear = document.querySelector('.footer p');
-    if (footerYear) {
-        const currentYear = new Date().getFullYear();
-        footerYear.innerHTML = `&copy; ${currentYear} RFM Insights. Todos os direitos reservados.`;
+// Check if user is already logged in
+document.addEventListener('DOMContentLoaded', () => {
+    const token = stateManager.getToken();
+    if (token) {
+        window.location.href = 'index.html';
     }
-};
-
-// Update year on page load and set interval for future updates
-updateFooterYear();
-setInterval(updateFooterYear, 1000 * 60 * 60); // Check every hour
-*/
+});
